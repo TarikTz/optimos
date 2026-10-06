@@ -20,6 +20,21 @@ func formatBytes(_ n: Int) -> String {
     ByteCountFormatter.string(fromByteCount: Int64(n), countStyle: .file)
 }
 
+/// True if `a` and `b` are (or would be) the same file: symlinks resolved, same inode when both exist,
+/// or same parent directory with a case-insensitively equal name (errs on the safe side on case-sensitive volumes).
+func isSameFile(_ a: URL, _ b: URL) -> Bool {
+    func id(_ u: URL) -> NSObjectProtocol? {
+        try? u.resourceValues(forKeys: [.fileResourceIdentifierKey]).fileResourceIdentifier
+    }
+    let ra = a.resolvingSymlinksInPath().standardizedFileURL
+    let rb = b.resolvingSymlinksInPath().standardizedFileURL
+    if ra == rb { return true }
+    if let ia = id(ra), let ib = id(rb), ia.isEqual(ib) { return true }
+    let pa = ra.deletingLastPathComponent(), pb = rb.deletingLastPathComponent()
+    let sameParent = pa == pb || { if let x = id(pa), let y = id(pb) { return x.isEqual(y) } else { return false } }()
+    return sameParent && ra.lastPathComponent.caseInsensitiveCompare(rb.lastPathComponent) == .orderedSame
+}
+
 /// Runs `pipeline` on one file and writes the result. Never overwrites the input.
 /// - `explicitOutput`: exact destination path.
 /// - otherwise `outputDirectory` (same file name), or next to the input with `suffix`.
@@ -40,7 +55,7 @@ func processFile(
         } else {
             dest = inURL.deletingLastPathComponent().appendingPathComponent("\(base)\(suffix).\(ext)")
         }
-        if dest.standardizedFileURL == inURL.standardizedFileURL {
+        if isSameFile(dest, inURL) {
             throw ValidationError("refusing to overwrite the input file; choose a different output")
         }
         try FileManager.default.createDirectory(
