@@ -12,4 +12,9 @@ status=$?
 grep -E "error:|warning:|\*\* BUILD" build/last-build.log || true
 [ $status -eq 0 ] || exit $status
 pkill -x OptimosApp || true
+# Wait (up to ~5s) for the old process to exit so `open` starts a fresh instance, not the dying one.
+for _ in $(seq 50); do
+  pgrep -x OptimosApp > /dev/null || break
+  sleep 0.1
+done
 open build/Build/Products/Debug/OptimosApp.app
