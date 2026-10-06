@@ -9,7 +9,7 @@ enum OverlayKeyAction: Equatable {
     /// Esc cancels; Return, keypad Enter and ⌘C copy; ⌘S saves. Key auto-repeats map to nothing.
     static func from(keyCode: UInt16, modifiers: NSEvent.ModifierFlags, isRepeat: Bool) -> OverlayKeyAction? {
         guard !isRepeat else { return nil }
-        let command = modifiers.intersection(.deviceIndependentFlagsMask) == .command
+        let command = modifiers.intersection([.command, .shift, .option, .control]) == .command
         switch keyCode {
         case 53: return .cancel  // Esc
         case 36, 76: return .copy  // Return, keypad Enter

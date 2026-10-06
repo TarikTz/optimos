@@ -36,4 +36,19 @@ import Testing
         #expect(action(36, isRepeat: true) == nil)
         #expect(action(53, isRepeat: true) == nil)
     }
+
+    @Test func capsLockDoesNotBreakCommandShortcuts() {
+        #expect(action(8, [.command, .capsLock]) == .copy)
+        #expect(action(1, [.command, .capsLock]) == .save)
+    }
+
+    @Test func functionAndNumericPadFlagsDoNotBreakCommandC() {
+        #expect(action(8, [.command, .function]) == .copy)
+        #expect(action(8, [.command, .numericPad]) == .copy)
+    }
+
+    @Test func realExtraModifiersStillBlockShortcutsWithCapsLockOn() {
+        #expect(action(8, [.command, .shift, .capsLock]) == nil)
+        #expect(action(1, [.option, .capsLock]) == nil)
+    }
 }
