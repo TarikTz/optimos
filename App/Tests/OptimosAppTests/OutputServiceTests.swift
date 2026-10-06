@@ -59,6 +59,7 @@ private func temporaryDirectory() -> URL {
 
     @Test func saveWritesAFileNamedFromTheClock() async throws {
         let directory = temporaryDirectory()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let date = Date(timeIntervalSince1970: 1_800_000_000)
         let service = OutputService(
@@ -86,6 +87,7 @@ private func temporaryDirectory() -> URL {
 
     @Test func saveToastNamesTheFolderAndTheFile() async throws {
         let directory = temporaryDirectory().appendingPathComponent("Shots")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory.deletingLastPathComponent()) }
         let service = OutputService(
             pasteboard: FakePasteboard(), saveDirectory: { directory },
@@ -104,6 +106,71 @@ private func temporaryDirectory() -> URL {
             pasteboard: FakePasteboard(), saveDirectory: { blocker.appendingPathComponent("sub") },
             optimizer: { _ in Data("OPT".utf8) })
         await #expect(throws: OutputError.self) { try await service.save(makeImage()) }
+    }
+
+    @Test func savingToAMissingCustomFolderThrowsAndCreatesNothing() async throws {
+        let parent = temporaryDirectory()
+        let missing = parent.appendingPathComponent("missing")
+        let service = OutputService(
+            pasteboard: FakePasteboard(), saveDirectory: { missing }, optimizer: { _ in Data("OPT".utf8) })
+        do {
+            _ = try await service.save(makeImage())
+            Issue.record("expected cannotWrite")
+        } catch let error as OutputError {
+            guard case .cannotWrite = error else {
+                Issue.record("expected cannotWrite")
+                return
+            }
+            #expect(error.description.contains(missing.path))
+        }
+        #expect(!FileManager.default.fileExists(atPath: missing.path))
+        #expect(!FileManager.default.fileExists(atPath: parent.path))
+    }
+
+    @Test func savingToAnUnpluggedDriveThrowsAndDoesNotCreateTheMountPoint() async throws {
+        let mount = "/Volumes/optimos-no-such-drive-\(UUID().uuidString)"
+        let folder = URL(fileURLWithPath: mount).appendingPathComponent("Shots")
+        let service = OutputService(
+            pasteboard: FakePasteboard(), saveDirectory: { folder }, optimizer: { _ in Data("OPT".utf8) })
+        await #expect(throws: OutputError.self) { try await service.save(makeImage()) }
+        #expect(!FileManager.default.fileExists(atPath: mount))
+    }
+
+    @Test func saveDirectoryIsReadAtSaveTime() async throws {
+        final class Box: @unchecked Sendable {
+            private let lock = NSLock()
+            private var url: URL
+            init(_ url: URL) { self.url = url }
+            var value: URL {
+                get { lock.withLock { url } }
+                set { lock.withLock { url = newValue } }
+            }
+        }
+        let first = temporaryDirectory()
+        let second = temporaryDirectory()
+        try FileManager.default.createDirectory(at: first, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: second, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: first)
+            try? FileManager.default.removeItem(at: second)
+        }
+        let box = Box(first)
+        let service = OutputService(
+            pasteboard: FakePasteboard(), saveDirectory: { box.value }, optimizer: { _ in Data("OPT".utf8) })
+        let a = try await service.save(makeImage())
+        box.value = second
+        let b = try await service.save(makeImage())
+        guard case .file(let urlA) = a.destination, case .file(let urlB) = b.destination else {
+            Issue.record("expected file destinations")
+            return
+        }
+        #expect(urlA.deletingLastPathComponent().standardizedFileURL == first.standardizedFileURL)
+        #expect(urlB.deletingLastPathComponent().standardizedFileURL == second.standardizedFileURL)
+    }
+
+    @Test func onlyTheDefaultFolderIsAutoCreated() {
+        #expect(!OutputService.requiresExistingFolder(SaveLocationStore.defaultDirectory))
+        #expect(OutputService.requiresExistingFolder(temporaryDirectory()))
     }
 
     /// Needs the optimizer tools from the README (oxipng) installed.

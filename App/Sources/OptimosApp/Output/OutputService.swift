@@ -133,10 +133,27 @@ struct OutputService: Sendable {
         }
     }
 
+    /// Only the default folder is created on demand; any other folder must already exist.
+    static func requiresExistingFolder(_ directory: URL) -> Bool {
+        directory.standardizedFileURL != SaveLocationStore.defaultDirectory.standardizedFileURL
+    }
+
     private func write(_ bytes: Data) throws -> URL {
         do {
             let directory = saveDirectory()
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            if Self.requiresExistingFolder(directory) {
+                // Never recreate a remembered folder (e.g. an unplugged drive's mount point): that
+                // would silently save somewhere other than the folder the user sees.
+                var isDirectory: ObjCBool = false
+                guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory) else {
+                    throw OutputError.cannotWrite("the folder \(directory.path) does not exist")
+                }
+                guard isDirectory.boolValue else {
+                    throw OutputError.cannotWrite("\(directory.path) is not a folder")
+                }
+            } else {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            }
             let name = ScreenshotFilename.make(for: now())
             let base = (name as NSString).deletingPathExtension
             var url = directory.appendingPathComponent(name)
@@ -147,6 +164,8 @@ struct OutputService: Sendable {
             }
             try bytes.write(to: url, options: .atomic)
             return url
+        } catch let error as OutputError {
+            throw error
         } catch {
             throw OutputError.cannotWrite("\(error.localizedDescription)")
         }
