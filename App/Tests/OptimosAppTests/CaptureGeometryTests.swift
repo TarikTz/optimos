@@ -49,4 +49,11 @@ import Testing
             displaySize: CGSize(width: 100, height: 100), imageSize: CGSize(width: 200, height: 200))
         #expect(crop == CGRect(x: 20, y: 20, width: 22, height: 22))
     }
+
+    @Test func scalesEachAxisIndependentlyForANonStandardScale() {
+        let crop = CaptureGeometry.pixelCropRect(
+            for: CGRect(x: 100, y: 50, width: 200, height: 100),
+            displaySize: CGSize(width: 1000, height: 500), imageSize: CGSize(width: 1500, height: 1000))
+        #expect(crop == CGRect(x: 150, y: 100, width: 300, height: 200))
+    }
 }

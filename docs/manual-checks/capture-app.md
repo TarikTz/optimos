@@ -25,9 +25,10 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 6. [ ] Paste a capture into apps that may only read TIFF: Preview "New from Clipboard", TextEdit, and Pages or Keynote. Expected: PNG-capable apps paste the image; TIFF-only apps may not (the app writes PNG pasteboard data only) — record which.
 7. [ ] `⌃⌥⌘4`: the screen dims with a crosshair. Drag a rectangle: its size is shown; release copies it. The overlay is NOT in the pasted image.
 8. [ ] In the overlay press Space: the window under the cursor gets an accent border; click it: that window is copied (it includes anything overlapping it, no shadow). Space again returns to area mode.
-9. [ ] In window mode, press the mouse on one window, drag, and release over another window. Expected: a single window is captured, or nothing; record which window (known: may capture the window under the cursor at press time).
+9. [ ] In window mode, press the mouse on one window, drag, and release over a different window. Expected: the window under the cursor at release is captured (the highlight follows the cursor while dragging), not the one under the cursor at press time.
 10. [ ] In window mode, click on the empty desktop (no window). Expected: nothing happens, and Esc still closes the overlay.
-11. [ ] Hold the Space key down in the overlay. Expected: the mode does not flicker repeatedly (known: auto-repeat flips area/window mode); record what you see.
+11. [ ] Hold the Space key down in the overlay. Expected: the mode toggles exactly once (no flicker from key auto-repeat); release and press again to toggle back.
+11a. [ ] In area mode start dragging a rectangle, press Space mid-drag, then release the mouse. Expected: nothing is captured, the clipboard is unchanged, and the overlay stays open (Esc still closes it).
 12. [ ] Retina: a pasted 100 × 100 point selection is 200 × 200 pixels.
 13. [ ] (2 displays) Put the second display to the LEFT of the primary, then ABOVE it. Capture on each display: the pasted area matches what was selected. Window mode works on the second display.
 14. [ ] Big capture: capture a full 5K/6K display or a very detailed screen. Note the time from hotkey to toast. Pressing the hotkey again during that time does nothing and does not crash.

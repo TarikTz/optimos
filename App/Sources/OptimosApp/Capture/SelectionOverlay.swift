@@ -48,6 +48,9 @@ final class SelectionView: NSView {
     private var dragStart: CGPoint?
     private var dragRect: CGRect?
     private var hoveredWindowRect: CGRect?
+    /// The mode the current mouse press started in; nil when no button is down. Kept across a
+    /// Space toggle so a press that began in one mode can never finish as a capture in the other.
+    private var pressMode: SelectionMode?
 
     init(display: FrozenDisplay, windows: [WindowInfo]) {
         self.display = display
@@ -90,6 +93,7 @@ final class SelectionView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        pressMode = mode
         guard mode == .area else { return }
         let point = convert(event.locationInWindow, from: nil)
         dragStart = point
@@ -97,6 +101,12 @@ final class SelectionView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        if mode == .window {
+            // Press-drag-release in window mode captures the window under the cursor at release,
+            // so keep the highlight following the cursor while the button is down.
+            updateHover()
+            return
+        }
         guard mode == .area, let start = dragStart else { return }
         let point = convert(event.locationInWindow, from: nil)
         dragRect = CaptureGeometry.normalizedRect(from: start, to: point).intersection(bounds)
@@ -104,6 +114,8 @@ final class SelectionView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        let pressMode = self.pressMode
+        self.pressMode = nil
         switch mode {
         case .area:
             let rect = dragRect
@@ -113,7 +125,9 @@ final class SelectionView: NSView {
             guard let rect, CaptureGeometry.isAcceptable(rect) else { return }
             onFinish?(CaptureSelection(displayID: display.info.id, rect: rect))
         case .window:
-            guard let rect = hoveredWindowRect else { return }
+            guard let rect = CaptureGeometry.windowCaptureRect(
+                pressMode: pressMode, currentMode: mode, hoveredRect: hoveredWindowRect)
+            else { return }
             onFinish?(CaptureSelection(displayID: display.info.id, rect: rect))
         }
     }
@@ -127,7 +141,7 @@ final class SelectionView: NSView {
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
         case 53: onFinish?(nil)  // Esc
-        case 49: onToggleMode?()  // Space
+        case 49 where !event.isARepeat: onToggleMode?()  // Space; holding it toggles once
         default: super.keyDown(with: event)
         }
     }

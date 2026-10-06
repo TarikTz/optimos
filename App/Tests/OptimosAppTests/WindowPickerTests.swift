@@ -7,6 +7,9 @@ import Testing
     // A second monitor to the LEFT of the primary has a negative global x origin.
     private let leftDisplay = DisplayInfo(id: 2, frame: CGRect(x: -1920, y: 0, width: 1920, height: 1080))
 
+    // A second monitor ABOVE the primary has a negative global y origin.
+    private let aboveDisplay = DisplayInfo(id: 3, frame: CGRect(x: 0, y: -1080, width: 1920, height: 1080))
+
     private func window(_ id: UInt32, _ frame: CGRect, layer: Int = 0) -> WindowInfo {
         WindowInfo(id: id, frame: frame, layer: layer, title: "w\(id)", appName: "App")
     }
@@ -49,5 +52,47 @@ import Testing
     @Test func returnsNilForAWindowOnAnotherDisplay() {
         let w = window(1, CGRect(x: 100, y: 100, width: 300, height: 200))  // on the primary display
         #expect(CaptureGeometry.localRect(of: w, on: leftDisplay) == nil)
+    }
+
+    @Test func findsAWindowOnADisplayAbovePrimary() {
+        let w = window(1, CGRect(x: 200, y: -900, width: 600, height: 400))
+        // display-local (250, 300) is global (250, -780), inside the window (global y -900 ..< -500)
+        #expect(CaptureGeometry.topmostWindow(at: CGPoint(x: 250, y: 300), in: [w], display: aboveDisplay)?.id == 1)
+        // display-local (250, 150) is global (250, -930), above the window; without the y offset it would hit
+        #expect(CaptureGeometry.topmostWindow(at: CGPoint(x: 250, y: 150), in: [w], display: aboveDisplay) == nil)
+    }
+
+    @Test func convertsAWindowOnADisplayAbovePrimaryToLocalPoints() {
+        let w = window(1, CGRect(x: 200, y: -900, width: 600, height: 400))
+        #expect(CaptureGeometry.localRect(of: w, on: aboveDisplay) == CGRect(x: 200, y: 180, width: 600, height: 400))
+    }
+
+    @Test func clipsAWindowHangingOffTheTopOfADisplayAbovePrimary() {
+        let w = window(1, CGRect(x: 200, y: -1200, width: 600, height: 400))  // spans global y -1200 ..< -800
+        #expect(CaptureGeometry.localRect(of: w, on: aboveDisplay) == CGRect(x: 200, y: 0, width: 600, height: 280))
+    }
+
+    // MARK: Which mouse-up captures a window
+
+    private let hovered = CGRect(x: 10, y: 10, width: 100, height: 100)
+
+    @Test func aWindowModePressCapturesTheHoveredWindow() {
+        #expect(CaptureGeometry.windowCaptureRect(pressMode: .window, currentMode: .window, hoveredRect: hovered) == hovered)
+    }
+
+    @Test func aPressStartedInAreaModeCapturesNothingAfterSpaceSwitchesToWindowMode() {
+        #expect(CaptureGeometry.windowCaptureRect(pressMode: .area, currentMode: .window, hoveredRect: hovered) == nil)
+    }
+
+    @Test func aMouseUpWithoutAPressCapturesNothing() {
+        #expect(CaptureGeometry.windowCaptureRect(pressMode: nil, currentMode: .window, hoveredRect: hovered) == nil)
+    }
+
+    @Test func nothingHoveredCapturesNothing() {
+        #expect(CaptureGeometry.windowCaptureRect(pressMode: .window, currentMode: .window, hoveredRect: nil) == nil)
+    }
+
+    @Test func aWindowPressSwitchedBackToAreaModeCapturesNoWindow() {
+        #expect(CaptureGeometry.windowCaptureRect(pressMode: .window, currentMode: .area, hoveredRect: hovered) == nil)
     }
 }

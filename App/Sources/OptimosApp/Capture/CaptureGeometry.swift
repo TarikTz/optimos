@@ -39,4 +39,12 @@ enum CaptureGeometry {
         let clipped = local.intersection(CGRect(origin: .zero, size: display.frame.size))
         return clipped.isNull || clipped.isEmpty ? nil : clipped
     }
+
+    /// What a mouse-up captures in window mode: the hovered window, but only when the press also
+    /// started in window mode. A press that began in area mode and was switched by Space, or a
+    /// mouse-up with no press at all, captures nothing.
+    static func windowCaptureRect(pressMode: SelectionMode?, currentMode: SelectionMode, hoveredRect: CGRect?) -> CGRect? {
+        guard currentMode == .window, pressMode == .window else { return nil }
+        return hoveredRect
+    }
 }
