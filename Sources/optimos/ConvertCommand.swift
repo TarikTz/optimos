@@ -21,8 +21,10 @@ struct ConvertCommand: AsyncParsableCommand {
         let preset = Preset(
             name: "convert", format: to, quality: quality, lossless: lossless,
             maxWidth: maxWidth, maxHeight: maxHeight, backgroundHex: background)
+        var claimedOutputs = Set<String>()  // one file, so nothing to collide with
         let result = await processFile(
-            file, pipeline: try preset.pipeline(), outputDirectory: nil, explicitOutput: output, suffix: "")
+            file, pipeline: try preset.pipeline(), outputDirectory: nil, explicitOutput: output, suffix: "",
+            claimedOutputs: &claimedOutputs)
         try report([result], json: json)
     }
 }

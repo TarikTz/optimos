@@ -23,8 +23,11 @@ struct OptimizeCommand: AsyncParsableCommand {
             pipeline = .defaultOptimize
         }
         var results: [FileResult] = []
+        var claimedOutputs = Set<String>()
         for file in files {
-            results.append(await processFile(file, pipeline: pipeline, outputDirectory: output, suffix: ".optimized"))
+            results.append(await processFile(
+                file, pipeline: pipeline, outputDirectory: output, suffix: ".optimized",
+                claimedOutputs: &claimedOutputs))
         }
         try report(results, json: json)
     }

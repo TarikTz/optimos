@@ -35,12 +35,27 @@ func isSameFile(_ a: URL, _ b: URL) -> Bool {
     return sameParent && ra.lastPathComponent.caseInsensitiveCompare(rb.lastPathComponent) == .orderedSame
 }
 
-/// Runs `pipeline` on one file and writes the result. Never overwrites the input.
+/// Key for spotting two outputs of one run that land on the same file: the parent directory's real
+/// path (symlinks such as /tmp -> /private/tmp resolved) plus the file name, lowercased because
+/// volumes are usually case-insensitive. Call once the parent directory exists. (`standardizedFileURL`
+/// alone is not stable: it drops "/private" only once the path exists.)
+func outputKey(_ url: URL) -> String {
+    let parent = url.deletingLastPathComponent().standardizedFileURL.path
+    var dir = parent
+    if let real = realpath(parent, nil) {
+        dir = String(cString: real)
+        free(real)
+    }
+    return (dir as NSString).appendingPathComponent(url.lastPathComponent).lowercased()
+}
+
+/// Runs `pipeline` on one file and writes the result. Never overwrites the input, nor an output
+/// written earlier in the same run (`claimedOutputs` holds their `outputKey`s and gains this one).
 /// - `explicitOutput`: exact destination path.
 /// - otherwise `outputDirectory` (same file name), or next to the input with `suffix`.
 func processFile(
     _ path: String, pipeline: Pipeline, outputDirectory: String?, explicitOutput: String? = nil,
-    suffix: String
+    suffix: String, claimedOutputs: inout Set<String>
 ) async -> FileResult {
     do {
         let inURL = URL(fileURLWithPath: path)
@@ -60,7 +75,12 @@ func processFile(
         }
         try FileManager.default.createDirectory(
             at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let key = outputKey(dest)
+        if claimedOutputs.contains(key) {
+            throw ValidationError("output would overwrite another output in this run: \(dest.path)")
+        }
         try result.bytes.write(to: dest, options: .atomic)
+        claimedOutputs.insert(key)
         return FileResult(
             input: path, output: dest.path, format: result.format.rawValue,
             originalBytes: result.originalSize, newBytes: result.newSize,
