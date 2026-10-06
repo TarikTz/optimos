@@ -21,7 +21,7 @@ See `PRD.md` and `docs/superpowers/` for the product definition, specs and plans
 
 ## OptimosApp (menu-bar app)
 
-A menu-bar app that captures the screen and puts an optimized PNG on the clipboard.
+A menu-bar app that captures the screen and puts an optimized PNG on the clipboard, or saves it to a folder you choose.
 
 Prerequisites (macOS 14+, Apple Silicon): `brew install xcodegen webp oxipng pngquant libjpeg-turbo`.
 If you rebuild repeatedly, creating `App/Config/Local.xcconfig` is strongly recommended: copy
@@ -36,9 +36,10 @@ Default shortcuts (rebinding comes in a later release):
 
 | Shortcut | Action |
 |---|---|
-| `⌃⌥⌘4` | Capture an area, or press Space to pick a window |
-| `⌃⌥⌘3` | Capture the screen under the mouse |
-| `⌃⌥⌘5` | Capture an area and save it to `~/Pictures/Optimos/` |
+| `⌃⌥⌘4` | Capture an area, or press Space to pick a window. A toolbar then appears next to the selection: **Copy** (`Enter` or `⌘C`), **Save** (`⌘S`) or **Cancel** (`Esc`). Dragging again outside the toolbar starts a new selection. |
+| `⌃⌥⌘3` | Capture the screen under the mouse and copy it immediately |
+
+Saved screenshots go to `~/Pictures/Optimos/` by default. Choose another folder with **Save Location…** in the menu-bar menu; the menu always shows the current folder, and **Show Last Screenshot in Finder** reveals the last saved file.
 
 Troubleshooting: if Screen Recording already shows OptimosApp as allowed but the app keeps asking (this
 happens after rebuilds of an ad-hoc signed build), run `tccutil reset ScreenCapture app.optimos.OptimosApp`,

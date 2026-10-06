@@ -17,33 +17,57 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 ## Permission and menu
 1. [ ] First launch with no Screen Recording permission: press `⌃⌥⌘3`. A toast asks you to allow Screen Recording and restart; the system prompt appears; nothing crashes.
 2. [ ] Grant permission in System Settings, quit and relaunch. The menu shows "Screen Recording: allowed".
-3. [ ] The menu-bar icon is visible, there is no Dock icon, and the menu lists the three capture actions with their shortcuts and Quit.
+3. [ ] The menu-bar icon is visible, there is no Dock icon, and the menu lists the two capture actions with their shortcuts, a "Saving to: …" line, "Save Location…", "Show Last Screenshot in Finder" (disabled before the first save), the permission line and Quit.
 
 ## Capture
 4. [ ] `⌃⌥⌘3`: the screen under the mouse is captured instantly. Paste into Preview or a browser: the image is correct and the toast shows `Copied · X → Y`.
 5. [ ] Pasting into Slack (or a GitHub comment) works.
 6. [ ] Paste a capture into apps that may only read TIFF: Preview "New from Clipboard", TextEdit, and Pages or Keynote. Expected: PNG-capable apps paste the image; TIFF-only apps may not (the app writes PNG pasteboard data only) — record which.
-7. [ ] `⌃⌥⌘4`: the screen dims with a crosshair. Drag a rectangle: its size is shown; release copies it. The overlay is NOT in the pasted image.
-8. [ ] In the overlay press Space: the window under the cursor gets an accent border; click it: that window is copied (it includes anything overlapping it, no shadow). Space again returns to area mode.
-9. [ ] In window mode, press the mouse on one window, drag, and release over a different window. Expected: the window under the cursor at release is captured (the highlight follows the cursor while dragging), not the one under the cursor at press time.
-10. [ ] In window mode, click on the empty desktop (no window). Expected: nothing happens, and Esc still closes the overlay.
+7. [ ] `⌃⌥⌘4`: the screen dims with a crosshair. Drag a rectangle: its size is shown. On release the selection STAYS and a toolbar with Copy, Save and Cancel icons appears next to it; press `Enter`: it is copied and the toast shows `Copied · X → Y`. The overlay is NOT in the pasted image.
+8. [ ] In the overlay press Space: the window under the cursor gets an accent border; click it: that window is selected and the toolbar appears (it does not copy by itself). Press `Enter`: the window is copied (it includes anything overlapping it, no shadow). Space again (before selecting) returns to area mode.
+9. [ ] In window mode, press the mouse on one window, drag, and release over a different window. Expected: the window under the cursor at release is selected (the highlight follows the cursor while dragging), not the one under the cursor at press time.
+10. [ ] In window mode, click on the empty desktop (no window). Expected: nothing is selected and no toolbar appears, and Esc still closes the overlay.
 11. [ ] Hold the Space key down in the overlay. Expected: the mode toggles exactly once (no flicker from key auto-repeat); release and press again to toggle back.
-11a. [ ] In area mode start dragging a rectangle, press Space mid-drag, then release the mouse. Expected: nothing is captured, the clipboard is unchanged, and the overlay stays open (Esc still closes it).
-12. [ ] Retina: a pasted 100 × 100 point selection is 200 × 200 pixels.
-13. [ ] (2 displays) Put the second display to the LEFT of the primary, then ABOVE it. Capture on each display: the pasted area matches what was selected. Window mode works on the second display.
-14. [ ] Big capture: capture a full 5K/6K display or a very detailed screen. Note the time from hotkey to toast. Pressing the hotkey again during that time does nothing and does not crash.
-15. [ ] Drag a large area on a 5K/6K display (or the largest you have). Expected: dragging stays smooth; record any lag.
-16. [ ] `⌃⌥⌘5`: select an area; a file appears in `~/Pictures/Optimos/` named `Optimos YYYY-MM-DD at HH.MM.SS.png` and the toast shows the name. Two captures in the same second get different names.
+12. [ ] In area mode start dragging a rectangle, press Space mid-drag, then release the mouse. Expected: nothing is selected, the clipboard is unchanged, and the overlay stays open (Esc still closes it).
+13. [ ] Retina: a pasted 100 × 100 point selection is 200 × 200 pixels.
+14. [ ] (2 displays) Put the second display to the LEFT of the primary, then ABOVE it. Capture on each display: the pasted area matches what was selected. Window mode works on the second display.
+15. [ ] Big capture: capture a full 5K/6K display or a very detailed screen. Note the time from hotkey to toast. Pressing the hotkey again during that time does nothing and does not crash.
+16. [ ] Drag a large area on a 5K/6K display (or the largest you have). Expected: dragging stays smooth; record any lag.
+17. [ ] Select an area and click **Save** (or press `⌘S`). Expected: a file appears in the save folder named `Optimos YYYY-MM-DD at HH.MM.SS.png` and the toast reads `Saved to Optimos · <file> · X → Y`; two saves in the same second get different names.
+
+## Confirm toolbar
+18. [ ] The toolbar appears below the selection at its right edge.
+19. [ ] A selection near the bottom of the screen puts the toolbar ABOVE it.
+20. [ ] A full-screen-size selection puts the toolbar inside its bottom-right corner.
+21. [ ] Selections at the far left and far right keep the toolbar fully on screen.
+22. [ ] (2 displays) The toolbar appears on the display where you selected.
+23. [ ] Hovering each icon shows its tooltip, and clicking Copy, Save and Cancel each work.
+24. [ ] `Enter` and `⌘C` copy, `⌘S` saves, `Esc` cancels, and none of them does anything before a selection exists.
+25. [ ] With the toolbar showing, Space does nothing.
+26. [ ] With the toolbar showing, dragging a new rectangle outside it discards the old selection and toolbar, and (2 displays) starting a selection on the other display removes the first display's toolbar.
+27. [ ] With the toolbar showing, right-click, pressing `⌃⌥⌘4` again and Cmd-Tab each dismiss the overlay with nothing copied.
+28. [ ] `Enter` and `Esc` work immediately after releasing the mouse WITHOUT clicking anywhere (the toolbar buttons must not take keyboard focus).
+29. [ ] Click the toolbar's padding between or around the three icons (not on an icon). Record whether the selection survives. Known: this may discard the selection and the toolbar (the press is treated as a new selection); re-select to continue.
+30. [ ] (2 displays) With a selection confirmed on one display, move the pointer onto the OTHER display and press `Enter`, `⌘C` or `⌘S`. Record what happens. Known: these keys may do nothing until the pointer returns to the display with the selection; Esc still cancels.
+
+## Save location
+31. [ ] The menu shows `Saving to: ~/Pictures/Optimos`.
+32. [ ] **Save Location…** opens a folder picker in front of other windows; choose another folder: the menu updates, the next Save writes there, and after quitting and relaunching the app the choice is still in place.
+33. [ ] Cancelling the picker changes nothing.
+34. [ ] **Show Last Screenshot in Finder** is disabled before the first save, reveals the file after a save, and is disabled again after you delete or move that file.
+35. [ ] Choose a folder, then delete it (or make it read-only with `chmod a-w <folder>`), then Save: a toast says `Save failed: …` and tells you to choose another folder, and no file is written anywhere else; restore the folder afterwards.
+36. [ ] The Copy flow and the `⌃⌥⌘3` instant copy are unchanged.
 
 ## Focus and dismissal
-17. [ ] Dismissing the overlay: Esc, right-click, pressing `⌃⌥⌘4` again, and Cmd-Tab each close it with nothing copied. The overlay can never get stuck.
-18. [ ] Open the overlay and press Esc immediately, WITHOUT clicking first. Expected: the overlay closes.
-19. [ ] While the overlay is open, switch Space (Ctrl-arrow or Mission Control) and Cmd-Tab to another app. Expected: the overlay closes, and the app does NOT yank you back to the old Space or app afterwards.
-20. [ ] After a capture or an Esc cancel, keep typing without clicking anywhere. Expected: keystrokes go to the app you were using before (focus returns to it).
+37. [ ] Dismissing the overlay: Esc, right-click, pressing `⌃⌥⌘4` again, and Cmd-Tab each close it with nothing copied. The overlay can never get stuck.
+38. [ ] Open the overlay and press Esc immediately, WITHOUT clicking first. Expected: the overlay closes.
+39. [ ] While the overlay is open, switch Space (Ctrl-arrow or Mission Control) and Cmd-Tab to another app. Expected: the overlay closes, and the app does NOT yank you back to the old Space or app afterwards.
+40. [ ] After a capture or an Esc cancel, keep typing without clicking anywhere. Expected: keystrokes go to the app you were using before (focus returns to it).
 
 ## Edge cases
-21. [ ] A full-screen app (Safari or Xcode in full screen): the overlay appears over it and captures correctly.
-22. [ ] A second Space: the overlay appears on the current Space.
-23. [ ] Another app already owns `⌃⌥⌘4` (for example set it in System Settings > Keyboard): the menu shows a warning line for that shortcut and the other shortcuts still work.
-24. [ ] Missing tool: rename oxipng with `mv "$(brew --prefix)/bin/oxipng" "$(brew --prefix)/bin/oxipng.off"`, then capture. Expected: the unoptimized screenshot is still copied and the toast says `not optimized`. Restore it immediately, before continuing: `mv "$(brew --prefix)/bin/oxipng.off" "$(brew --prefix)/bin/oxipng"`, then run `which oxipng` (expected: prints the path).
-25. [ ] Quit from the menu: the app exits and the hotkeys stop working.
+41. [ ] A full-screen app (Safari or Xcode in full screen): the overlay appears over it and captures correctly.
+42. [ ] A second Space: the overlay appears on the current Space.
+43. [ ] Another app already owns `⌃⌥⌘4` (for example set it in System Settings > Keyboard): the menu shows a warning line for that shortcut and the other shortcuts still work.
+44. [ ] Missing tool: rename oxipng with `mv "$(brew --prefix)/bin/oxipng" "$(brew --prefix)/bin/oxipng.off"`, then capture. Expected: the unoptimized screenshot is still copied and the toast says `not optimized`. Restore it immediately, before continuing: `mv "$(brew --prefix)/bin/oxipng.off" "$(brew --prefix)/bin/oxipng"`, then run `which oxipng` (expected: prints the path).
+45. [ ] Trigger a long failure message (for example the missing-`oxipng` check combined with a Save, or the save failure above) and confirm the toast wraps to several lines and is fully visible (not cut off at the bottom).
+46. [ ] Quit from the menu: the app exits and the hotkeys stop working.
