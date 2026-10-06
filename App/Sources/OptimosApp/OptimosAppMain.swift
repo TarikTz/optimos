@@ -1,4 +1,5 @@
 import AppKit
+import OSLog
 import SwiftUI
 
 @main
@@ -12,18 +13,22 @@ struct OptimosAppMain: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var statusItem: NSStatusItem?
+    private let hotkeys = HotkeyManager()
+    private var menuBar: MenuBarController?
+    private let log = Logger(subsystem: "app.optimos.OptimosApp", category: "actions")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Unit tests load the app as a host; do not show UI there.
+        // Unit tests load the app as a host; do not register hotkeys or show UI there.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return }
 
         NSApp.setActivationPolicy(.accessory)
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "OptimosApp")
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Quit OptimosApp", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        item.menu = menu
-        statusItem = item
+        let menuBar = MenuBarController(permission: PermissionService())
+        let handle: (HotkeyAction) -> Void = { [log] action in
+            log.info("action requested: \(action.rawValue, privacy: .public)")
+        }
+        menuBar.onAction = handle
+        hotkeys.onAction = handle
+        menuBar.setFailedHotkeys(hotkeys.register(Hotkey.defaults))
+        self.menuBar = menuBar
     }
 }
