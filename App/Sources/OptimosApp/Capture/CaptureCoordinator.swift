@@ -65,8 +65,9 @@ final class CaptureCoordinator {
 
     private func captureArea(save: Bool) async throws {
         // Freeze the screens BEFORE any overlay exists, so the overlay can never be captured.
+        async let windows: [WindowInfo] = (try? await capture.onScreenWindows()) ?? []
         let frozen = try await capture.captureAllDisplays()
-        let selection = await overlay.run(displays: frozen)
+        let selection = await overlay.run(displays: frozen, windows: await windows)
         guard let selection, let display = frozen.first(where: { $0.info.id == selection.displayID }) else {
             return  // cancelled
         }

@@ -1,5 +1,10 @@
 import AppKit
 
+enum SelectionMode {
+    case area
+    case window
+}
+
 /// A borderless window that covers one display.
 @MainActor
 final class OverlayWindow: NSWindow {
@@ -25,15 +30,28 @@ final class OverlayWindow: NSWindow {
 /// matching `CaptureSelection` and the pixel layout of the frozen image.
 @MainActor
 final class SelectionView: NSView {
+    var mode: SelectionMode = .area {
+        didSet {
+            dragStart = nil
+            dragRect = nil
+            hoveredWindowRect = nil
+            updateHover()
+            needsDisplay = true
+        }
+    }
     var onFinish: ((CaptureSelection?) -> Void)?
+    var onToggleMode: (() -> Void)?
 
     private let display: FrozenDisplay
+    private let windows: [WindowInfo]
     private let background: NSImage
     private var dragStart: CGPoint?
     private var dragRect: CGRect?
+    private var hoveredWindowRect: CGRect?
 
-    init(display: FrozenDisplay) {
+    init(display: FrozenDisplay, windows: [WindowInfo]) {
         self.display = display
+        self.windows = windows
         self.background = NSImage(cgImage: display.image, size: display.info.frame.size)
         super.init(frame: NSRect(origin: .zero, size: display.info.frame.size))
     }
@@ -48,7 +66,8 @@ final class SelectionView: NSView {
         super.updateTrackingAreas()
         trackingAreas.forEach(removeTrackingArea)
         addTrackingArea(NSTrackingArea(
-            rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self))
+            rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self))
     }
 
     override func resetCursorRects() {
@@ -61,26 +80,42 @@ final class SelectionView: NSView {
         window?.makeKeyAndOrderFront(nil)
     }
 
+    override func mouseExited(with event: NSEvent) {
+        hoveredWindowRect = nil
+        needsDisplay = true
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        updateHover()
+    }
+
     override func mouseDown(with event: NSEvent) {
+        guard mode == .area else { return }
         let point = convert(event.locationInWindow, from: nil)
         dragStart = point
         dragRect = CGRect(origin: point, size: .zero)
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard let start = dragStart else { return }
+        guard mode == .area, let start = dragStart else { return }
         let point = convert(event.locationInWindow, from: nil)
         dragRect = CaptureGeometry.normalizedRect(from: start, to: point).intersection(bounds)
         needsDisplay = true
     }
 
     override func mouseUp(with event: NSEvent) {
-        let rect = dragRect
-        dragStart = nil
-        dragRect = nil
-        needsDisplay = true
-        guard let rect, CaptureGeometry.isAcceptable(rect) else { return }
-        onFinish?(CaptureSelection(displayID: display.info.id, rect: rect))
+        switch mode {
+        case .area:
+            let rect = dragRect
+            dragStart = nil
+            dragRect = nil
+            needsDisplay = true
+            guard let rect, CaptureGeometry.isAcceptable(rect) else { return }
+            onFinish?(CaptureSelection(displayID: display.info.id, rect: rect))
+        case .window:
+            guard let rect = hoveredWindowRect else { return }
+            onFinish?(CaptureSelection(displayID: display.info.id, rect: rect))
+        }
     }
 
     override func rightMouseDown(with event: NSEvent) {
@@ -90,10 +125,34 @@ final class SelectionView: NSView {
     // MARK: Keyboard
 
     override func keyDown(with event: NSEvent) {
-        if event.keyCode == 53 {  // Esc
-            onFinish?(nil)
-        } else {
-            super.keyDown(with: event)
+        switch event.keyCode {
+        case 53: onFinish?(nil)  // Esc
+        case 49: onToggleMode?()  // Space
+        default: super.keyDown(with: event)
+        }
+    }
+
+    // MARK: Window hover
+
+    private func currentMouse() -> CGPoint? {
+        guard let window else { return nil }
+        let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        return bounds.contains(point) ? point : nil
+    }
+
+    private func updateHover() {
+        guard mode == .window, let point = currentMouse() else {
+            if hoveredWindowRect != nil {
+                hoveredWindowRect = nil
+                needsDisplay = true
+            }
+            return
+        }
+        let rect = CaptureGeometry.topmostWindow(at: point, in: windows, display: display.info)
+            .flatMap { CaptureGeometry.localRect(of: $0, on: display.info) }
+        if rect != hoveredWindowRect {
+            hoveredWindowRect = rect
+            needsDisplay = true
         }
     }
 
@@ -103,7 +162,9 @@ final class SelectionView: NSView {
         background.draw(
             in: bounds, from: .zero, operation: .copy, fraction: 1, respectFlipped: true, hints: nil)
 
-        let highlight = dragRect.flatMap { $0.width > 0 && $0.height > 0 ? $0 : nil }
+        let highlight = (mode == .area ? dragRect : hoveredWindowRect).flatMap {
+            $0.width > 0 && $0.height > 0 ? $0 : nil
+        }
 
         let dim = NSBezierPath(rect: bounds)
         if let highlight {
@@ -115,8 +176,8 @@ final class SelectionView: NSView {
 
         guard let highlight else { return }
         let border = NSBezierPath(rect: highlight)
-        border.lineWidth = 1
-        NSColor.white.setStroke()
+        border.lineWidth = mode == .window ? 3 : 1
+        (mode == .window ? NSColor.controlAccentColor : NSColor.white).setStroke()
         border.stroke()
         drawSizeLabel(for: highlight)
     }
@@ -141,18 +202,22 @@ final class SelectionView: NSView {
 @MainActor
 final class SelectionOverlayController {
     private var overlayWindows: [OverlayWindow] = []
+    private var views: [SelectionView] = []
     private var continuation: CheckedContinuation<CaptureSelection?, Never>?
     private var resignObserver: NSObjectProtocol?
     private var spaceObserver: NSObjectProtocol?
     private var previousApp: NSRunningApplication?
+    private var mode: SelectionMode = .area {
+        didSet { views.forEach { $0.mode = mode } }
+    }
 
     var isActive: Bool { continuation != nil }
 
-    func run(displays: [FrozenDisplay]) async -> CaptureSelection? {
+    func run(displays: [FrozenDisplay], windows: [WindowInfo]) async -> CaptureSelection? {
         guard continuation == nil else { return nil }
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
-            present(displays: displays)
+            present(displays: displays, windows: windows)
         }
     }
 
@@ -160,11 +225,14 @@ final class SelectionOverlayController {
         finish(nil)
     }
 
-    private func present(displays: [FrozenDisplay]) {
+    private func present(displays: [FrozenDisplay], windows: [WindowInfo]) {
+        mode = .area
         for display in displays {
             guard let screen = NSScreen.screens.first(where: { $0.displayID == display.info.id }) else { continue }
-            let view = SelectionView(display: display)
+            let view = SelectionView(display: display, windows: windows)
             view.onFinish = { [weak self] selection in self?.finish(selection) }
+            view.onToggleMode = { [weak self] in self?.toggleMode() }
+            views.append(view)
             overlayWindows.append(OverlayWindow(screen: screen, contentView: view))
         }
         guard !overlayWindows.isEmpty else {
@@ -204,6 +272,10 @@ final class SelectionOverlayController {
             .makeKeyAndOrderFront(nil)
     }
 
+    private func toggleMode() {
+        mode = mode == .area ? .window : .area
+    }
+
     private func finish(_ selection: CaptureSelection?, restoreFocus: Bool = true) {
         guard let continuation else { return }
         self.continuation = nil
@@ -216,8 +288,10 @@ final class SelectionOverlayController {
         // finish() can run inside a window's own mouseUp/rightMouseDown; keep the windows alive one
         // more run-loop turn so the dispatching window is never deallocated mid-event.
         let windowsToRelease = overlayWindows
+        let viewsToRelease = views
         overlayWindows = []
-        DispatchQueue.main.async { _ = windowsToRelease }
+        views = []
+        DispatchQueue.main.async { _ = (windowsToRelease, viewsToRelease) }
         // Give keyboard focus back only for exits that start inside the overlay. Observer-driven
         // cancels (app switch, Space change) mean the user already moved on; reactivating the old
         // app could pull them back to the Space they just left. NSApp.isActive guards the rest.
