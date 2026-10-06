@@ -54,7 +54,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         for action in failedHotkeys {
             let shortcut = hotkeys[action]?.displayString ?? ""
             let item = NSMenuItem(
-                title: "⚠︎ \(shortcut) is used by another app", action: nil, keyEquivalent: "")
+                title: "⚠︎ \(shortcut) could not be registered", action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
         }

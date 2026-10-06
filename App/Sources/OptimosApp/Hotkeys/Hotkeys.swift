@@ -55,7 +55,9 @@ final class HotkeyManager {
     /// (for example because another app already owns the combination).
     func register(_ table: [HotkeyAction: Hotkey]) -> [HotkeyAction] {
         unregisterAll()
-        installHandlerIfNeeded()
+        guard installHandlerIfNeeded() else {
+            return table.keys.sorted { $0.rawValue < $1.rawValue }
+        }
         HotkeyManager.current = self
         var failed: [HotkeyAction] = []
         for (action, key) in table {
@@ -77,11 +79,12 @@ final class HotkeyManager {
         references.removeAll()
     }
 
-    private func installHandlerIfNeeded() {
-        guard !handlerInstalled else { return }
+    /// Installs the Carbon event handler. Replaceable so tests can simulate a failure
+    /// without touching real global hotkeys.
+    var handlerInstaller: @MainActor () -> OSStatus = {
         var spec = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-        InstallEventHandler(
+        return InstallEventHandler(
             GetApplicationEventTarget(),
             { _, event, _ -> OSStatus in
                 var id = EventHotKeyID()
@@ -94,6 +97,11 @@ final class HotkeyManager {
                 Task { @MainActor in HotkeyManager.current?.onAction?(action) }
                 return noErr
             }, 1, &spec, nil, nil)
-        handlerInstalled = true
+    }
+
+    private func installHandlerIfNeeded() -> Bool {
+        if handlerInstalled { return true }
+        if handlerInstaller() == noErr { handlerInstalled = true }
+        return handlerInstalled
     }
 }

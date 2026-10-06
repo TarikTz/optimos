@@ -15,11 +15,21 @@ import Testing
         #expect(Set(keys.map(\.keyCode)).count == keys.count)
         let system = UInt32(cmdKey | shiftKey)
         for key in keys { #expect(key.modifiers != system) }
+        let expected = UInt32(controlKey | optionKey | cmdKey)
+        for key in keys { #expect(key.modifiers == expected) }
     }
 
     @Test func rendersTheShortcutForTheMenu() {
         #expect(Hotkey.defaults[.captureArea]?.displayString == "⌃⌥⌘4")
         #expect(Hotkey.defaults[.captureScreen]?.displayString == "⌃⌥⌘3")
         #expect(Hotkey.defaults[.captureAndSave]?.displayString == "⌃⌥⌘5")
+    }
+
+    @MainActor
+    @Test func reportsEveryHotkeyAsFailedWhenTheHandlerCannotBeInstalled() {
+        let manager = HotkeyManager()
+        manager.handlerInstaller = { OSStatus(eventNotHandledErr) }
+        let failed = manager.register(Hotkey.defaults)
+        #expect(failed == HotkeyAction.allCases.sorted { $0.rawValue < $1.rawValue })
     }
 }
