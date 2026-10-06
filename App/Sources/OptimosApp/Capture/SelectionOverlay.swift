@@ -35,12 +35,17 @@ final class SelectionView: NSView {
             dragStart = nil
             dragRect = nil
             hoveredWindowRect = nil
+            discardConfirmation()
             updateHover()
             needsDisplay = true
         }
     }
-    var onFinish: ((CaptureSelection?) -> Void)?
+    var onFinish: ((OverlayOutcome?) -> Void)?
     var onToggleMode: (() -> Void)?
+    /// A selection was confirmed (the toolbar is showing).
+    var onConfirm: (() -> Void)?
+    /// A new press began; the controller clears any confirmation on every display.
+    var onBeginSelection: (() -> Void)?
 
     private let display: FrozenDisplay
     private let windows: [WindowInfo]
@@ -51,6 +56,9 @@ final class SelectionView: NSView {
     /// The mode the current mouse press started in; nil when no button is down. Kept across a
     /// Space toggle so a press that began in one mode can never finish as a capture in the other.
     private var pressMode: SelectionMode?
+    /// The selection fixed on release; while set, the toolbar is showing and Copy/Save/Cancel apply to it.
+    private var confirmedRect: CGRect?
+    private var toolbar: OverlayToolbar?
 
     init(display: FrozenDisplay, windows: [WindowInfo]) {
         self.display = display
@@ -93,6 +101,8 @@ final class SelectionView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        // Pressing outside the toolbar starts over: any confirmed selection (on any display) is dropped.
+        onBeginSelection?()
         pressMode = mode
         guard mode == .area else { return }
         let point = convert(event.locationInWindow, from: nil)
@@ -123,13 +133,46 @@ final class SelectionView: NSView {
             dragRect = nil
             needsDisplay = true
             guard let rect, CaptureGeometry.isAcceptable(rect) else { return }
-            onFinish?(CaptureSelection(displayID: display.info.id, rect: rect))
+            confirm(rect)
         case .window:
             guard let rect = CaptureGeometry.windowCaptureRect(
                 pressMode: pressMode, currentMode: mode, hoveredRect: hoveredWindowRect)
             else { return }
-            onFinish?(CaptureSelection(displayID: display.info.id, rect: rect))
+            confirm(rect)
         }
+    }
+
+    // MARK: Confirm toolbar
+
+    /// Fixes the selection and shows the Copy / Save / Cancel toolbar next to it.
+    private func confirm(_ rect: CGRect) {
+        confirmedRect = rect
+        let bar = OverlayToolbar()
+        bar.onCopy = { [weak self] in self?.finish(with: .copy) }
+        bar.onSave = { [weak self] in self?.finish(with: .save) }
+        bar.onCancel = { [weak self] in self?.onFinish?(nil) }
+        bar.frame = ToolbarPlacement.frame(
+            for: rect, toolbarSize: OverlayToolbar.size, displaySize: bounds.size)
+        addSubview(bar)
+        toolbar = bar
+        needsDisplay = true
+        onConfirm?()
+    }
+
+    /// Drops a confirmed selection and its toolbar (also called by the controller for other displays).
+    func discardConfirmation() {
+        guard confirmedRect != nil else { return }
+        confirmedRect = nil
+        toolbar?.removeFromSuperview()
+        toolbar = nil
+        updateHover()
+        needsDisplay = true
+    }
+
+    private func finish(with action: CaptureAction) {
+        guard let rect = confirmedRect else { return }
+        onFinish?(OverlayOutcome(
+            selection: CaptureSelection(displayID: display.info.id, rect: rect), action: action))
     }
 
     override func rightMouseDown(with event: NSEvent) {
@@ -139,10 +182,33 @@ final class SelectionView: NSView {
     // MARK: Keyboard
 
     override func keyDown(with event: NSEvent) {
-        switch event.keyCode {
-        case 53: onFinish?(nil)  // Esc
-        case 49 where !event.isARepeat: onToggleMode?()  // Space; holding it toggles once
-        default: super.keyDown(with: event)
+        if handle(event) { return }
+        if event.keyCode == 49 {  // Space: toggles area/window; ignored while a selection is confirmed
+            if !event.isARepeat && confirmedRect == nil { onToggleMode?() }
+            return
+        }
+        super.keyDown(with: event)
+    }
+
+    /// ⌘C and ⌘S arrive as key equivalents, before `keyDown`.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard event.modifierFlags.contains(.command) else { return false }
+        return handle(event)
+    }
+
+    private func handle(_ event: NSEvent) -> Bool {
+        guard
+            let action = OverlayKeyAction.from(
+                keyCode: event.keyCode, modifiers: event.modifierFlags, isRepeat: event.isARepeat)
+        else { return false }
+        switch action {
+        case .cancel:
+            onFinish?(nil)
+            return true
+        case .copy, .save:
+            guard confirmedRect != nil else { return false }  // nothing to confirm yet
+            finish(with: action == .copy ? .copy : .save)
+            return true
         }
     }
 
@@ -155,7 +221,7 @@ final class SelectionView: NSView {
     }
 
     private func updateHover() {
-        guard mode == .window, let point = currentMouse() else {
+        guard mode == .window, confirmedRect == nil, let point = currentMouse() else {
             if hoveredWindowRect != nil {
                 hoveredWindowRect = nil
                 needsDisplay = true
@@ -176,7 +242,7 @@ final class SelectionView: NSView {
         background.draw(
             in: bounds, from: .zero, operation: .copy, fraction: 1, respectFlipped: true, hints: nil)
 
-        let highlight = (mode == .area ? dragRect : hoveredWindowRect).flatMap {
+        let highlight = (confirmedRect ?? (mode == .area ? dragRect : hoveredWindowRect)).flatMap {
             $0.width > 0 && $0.height > 0 ? $0 : nil
         }
 
@@ -212,12 +278,15 @@ final class SelectionView: NSView {
     }
 }
 
-/// Shows an overlay on every display and returns what the user picked, or nil if cancelled.
+/// Shows an overlay on every display and returns the confirmed selection with the chosen action,
+/// or nil if cancelled.
 @MainActor
 final class SelectionOverlayController {
     private var overlayWindows: [OverlayWindow] = []
     private var views: [SelectionView] = []
-    private var continuation: CheckedContinuation<CaptureSelection?, Never>?
+    private var continuation: CheckedContinuation<OverlayOutcome?, Never>?
+    /// True while a selection is confirmed (toolbar showing); Space is ignored then.
+    private var isConfirming = false
     private var resignObserver: NSObjectProtocol?
     private var spaceObserver: NSObjectProtocol?
     private var previousApp: NSRunningApplication?
@@ -227,7 +296,7 @@ final class SelectionOverlayController {
 
     var isActive: Bool { continuation != nil }
 
-    func run(displays: [FrozenDisplay], windows: [WindowInfo]) async -> CaptureSelection? {
+    func run(displays: [FrozenDisplay], windows: [WindowInfo]) async -> OverlayOutcome? {
         guard continuation == nil else { return nil }
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
@@ -244,8 +313,10 @@ final class SelectionOverlayController {
         for display in displays {
             guard let screen = NSScreen.screens.first(where: { $0.displayID == display.info.id }) else { continue }
             let view = SelectionView(display: display, windows: windows)
-            view.onFinish = { [weak self] selection in self?.finish(selection) }
+            view.onFinish = { [weak self] outcome in self?.finish(outcome) }
             view.onToggleMode = { [weak self] in self?.toggleMode() }
+            view.onConfirm = { [weak self, weak view] in self?.selectionConfirmed(on: view) }
+            view.onBeginSelection = { [weak self] in self?.beginSelection() }
             views.append(view)
             overlayWindows.append(OverlayWindow(screen: screen, contentView: view))
         }
@@ -287,12 +358,26 @@ final class SelectionOverlayController {
     }
 
     private func toggleMode() {
+        guard !isConfirming else { return }
         mode = mode == .area ? .window : .area
     }
 
-    private func finish(_ selection: CaptureSelection?, restoreFocus: Bool = true) {
+    /// One display confirmed a selection: no other display may keep one.
+    private func selectionConfirmed(on confirmedView: SelectionView?) {
+        isConfirming = true
+        for view in views where view !== confirmedView { view.discardConfirmation() }
+    }
+
+    /// A new press began somewhere: drop every confirmation and allow mode changes again.
+    private func beginSelection() {
+        isConfirming = false
+        views.forEach { $0.discardConfirmation() }
+    }
+
+    private func finish(_ outcome: OverlayOutcome?, restoreFocus: Bool = true) {
         guard let continuation else { return }
         self.continuation = nil
+        isConfirming = false
         // Remove observers first so reactivating the previous app below cannot re-trigger cancel.
         if let resignObserver { NotificationCenter.default.removeObserver(resignObserver) }
         if let spaceObserver { NSWorkspace.shared.notificationCenter.removeObserver(spaceObserver) }
@@ -313,6 +398,6 @@ final class SelectionOverlayController {
             previousApp?.activate(from: NSRunningApplication.current, options: [])
         }
         previousApp = nil
-        continuation.resume(returning: selection)
+        continuation.resume(returning: outcome)
     }
 }

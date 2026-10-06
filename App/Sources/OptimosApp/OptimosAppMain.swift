@@ -25,7 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let saveLocation = SaveLocationStore()
         let coordinator = CaptureCoordinator(
             capture: ScreenCaptureKitService(), output: OutputService(saveDirectory: { saveLocation.directory }),
-            permission: permission, toast: ToastPresenter(), overlay: SelectionOverlayController())
+            permission: permission, toast: ToastPresenter(), overlay: SelectionOverlayController(),
+            saveLocation: saveLocation)
         let menuBar = MenuBarController(permission: permission, saveLocation: saveLocation)
         menuBar.onAction = { coordinator.perform($0) }
         hotkeys.onAction = { coordinator.perform($0) }

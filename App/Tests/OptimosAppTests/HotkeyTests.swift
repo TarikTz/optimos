@@ -22,7 +22,6 @@ import Testing
     @Test func rendersTheShortcutForTheMenu() {
         #expect(Hotkey.defaults[.captureArea]?.displayString == "⌃⌥⌘4")
         #expect(Hotkey.defaults[.captureScreen]?.displayString == "⌃⌥⌘3")
-        #expect(Hotkey.defaults[.captureAndSave]?.displayString == "⌃⌥⌘5")
     }
 
     @MainActor

@@ -4,13 +4,11 @@ import Foundation
 enum HotkeyAction: UInt32, CaseIterable, Sendable {
     case captureArea = 1
     case captureScreen = 2
-    case captureAndSave = 3
 
     var menuTitle: String {
         switch self {
         case .captureArea: "Capture Area or Window"
         case .captureScreen: "Capture Screen"
-        case .captureAndSave: "Capture Area and Save to Folder"
         }
     }
 }
@@ -36,7 +34,6 @@ struct Hotkey: Equatable, Sendable {
     static let defaults: [HotkeyAction: Hotkey] = [
         .captureArea: Hotkey(keyCode: UInt32(kVK_ANSI_4), modifiers: controlOptionCommand, keyLabel: "4"),
         .captureScreen: Hotkey(keyCode: UInt32(kVK_ANSI_3), modifiers: controlOptionCommand, keyLabel: "3"),
-        .captureAndSave: Hotkey(keyCode: UInt32(kVK_ANSI_5), modifiers: controlOptionCommand, keyLabel: "5"),
     ]
 }
 
