@@ -33,6 +33,28 @@ public struct Preset: Codable, Sendable, Equatable {
         self.backgroundHex = backgroundHex
     }
 
+    private enum CodingKeys: String, CodingKey {
+        case name, format, quality, lossless, maxWidth, maxHeight
+        case stripMetadata, optimize, quantizeQuality, backgroundHex
+    }
+
+    /// Only `name` is required; missing keys take the memberwise-init defaults so
+    /// hand-written or older files keep decoding.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            name: try c.decode(String.self, forKey: .name),
+            format: try c.decodeIfPresent(ImageFormat.self, forKey: .format),
+            quality: try c.decodeIfPresent(Int.self, forKey: .quality),
+            lossless: try c.decodeIfPresent(Bool.self, forKey: .lossless) ?? false,
+            maxWidth: try c.decodeIfPresent(Int.self, forKey: .maxWidth),
+            maxHeight: try c.decodeIfPresent(Int.self, forKey: .maxHeight),
+            stripMetadata: try c.decodeIfPresent(Bool.self, forKey: .stripMetadata) ?? true,
+            optimize: try c.decodeIfPresent(Bool.self, forKey: .optimize) ?? true,
+            quantizeQuality: try c.decodeIfPresent(ClosedRange<Int>.self, forKey: .quantizeQuality),
+            backgroundHex: try c.decodeIfPresent(String.self, forKey: .backgroundHex))
+    }
+
     /// Fixed order: resize, strip metadata, optimize, then encode (see spec §4).
     public func pipeline() throws -> Pipeline {
         var background: RGBColor?

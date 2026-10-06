@@ -49,4 +49,19 @@ import Testing
         let preset = Preset(name: "x", format: .jpeg, backgroundHex: "zzz")
         #expect(throws: OptimosError.self) { try preset.pipeline() }
     }
+
+    @Test func sparseJSONDecodesWithDefaults() throws {
+        let json = Data(#"[{"name":"Blog","format":"webp"}]"#.utf8)
+        let decoded = try JSONDecoder().decode([Preset].self, from: json)
+        #expect(decoded == [Preset(name: "Blog", format: .webp)])
+    }
+
+    @Test func sparseStoreFileStillResolvesBuiltInsAndCustom() throws {
+        let store = tempStore()
+        try FileManager.default.createDirectory(
+            at: store.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data(#"[{"name":"Blog","format":"webp"}]"#.utf8).write(to: store.url)
+        #expect(try store.preset(named: "website")?.name == "Website")
+        #expect(try store.preset(named: "blog") == Preset(name: "Blog", format: .webp))
+    }
 }
