@@ -184,7 +184,7 @@ final class SelectionOverlayController {
         resignObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didResignActiveNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.cancel() }
+            MainActor.assumeIsolated { self?.finish(nil, restoreFocus: false) }
         }
 
         // Mission Control / Space switches do not resign app activation, and the overlay is
@@ -192,7 +192,7 @@ final class SelectionOverlayController {
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.cancel() }
+            MainActor.assumeIsolated { self?.finish(nil, restoreFocus: false) }
         }
 
         NSApp.activate(ignoringOtherApps: true)
@@ -204,7 +204,7 @@ final class SelectionOverlayController {
             .makeKeyAndOrderFront(nil)
     }
 
-    private func finish(_ selection: CaptureSelection?) {
+    private func finish(_ selection: CaptureSelection?, restoreFocus: Bool = true) {
         guard let continuation else { return }
         self.continuation = nil
         // Remove observers first so reactivating the previous app below cannot re-trigger cancel.
@@ -218,8 +218,12 @@ final class SelectionOverlayController {
         let windowsToRelease = overlayWindows
         overlayWindows = []
         DispatchQueue.main.async { _ = windowsToRelease }
-        // Give keyboard focus back to the app the user was using.
-        previousApp?.activate(from: NSRunningApplication.current, options: [])
+        // Give keyboard focus back only for exits that start inside the overlay. Observer-driven
+        // cancels (app switch, Space change) mean the user already moved on; reactivating the old
+        // app could pull them back to the Space they just left. NSApp.isActive guards the rest.
+        if restoreFocus, NSApp.isActive {
+            previousApp?.activate(from: NSRunningApplication.current, options: [])
+        }
         previousApp = nil
         continuation.resume(returning: selection)
     }
