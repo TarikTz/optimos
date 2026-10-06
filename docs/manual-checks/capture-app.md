@@ -7,6 +7,8 @@ macOS / displays used:
 
 Known limitations (see spec): window capture is a crop (overlapping windows included, no shadow); selection stays within one display; hotkeys are not rebindable yet.
 
+This checklist has NOT been run yet; tick items only after doing them.
+
 Setup: copy `App/Config/Local.xcconfig.example` to `App/Config/Local.xcconfig` and set your team id so
 Screen Recording permission survives rebuilds (a free Apple ID "Apple Development" certificate is enough).
 If Screen Recording already shows OptimosApp as allowed but the app keeps asking (this happens after rebuilds
@@ -33,7 +35,7 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 14. [ ] (2 displays) Put the second display to the LEFT of the primary, then ABOVE it. Capture on each display: the pasted area matches what was selected. Window mode works on the second display.
 15. [ ] Big capture: capture a full 5K/6K display or a very detailed screen. Note the time from hotkey to toast. Pressing the hotkey again during that time does nothing and does not crash.
 16. [ ] Drag a large area on a 5K/6K display (or the largest you have). Expected: dragging stays smooth; record any lag.
-17. [ ] Select an area and click **Save** (or press `⌘S`). Expected: a file appears in the save folder named `Optimos YYYY-MM-DD at HH.MM.SS.png` and the toast reads `Saved to Optimos · <file> · X → Y`; two saves in the same second get different names.
+17. [ ] Select an area and click **Save** (or press `⌘S`). Expected: a file appears in the save folder (the default folder `~/Pictures/Optimos`) named `Optimos YYYY-MM-DD at HH.MM.SS.png` and the toast reads `Saved to Optimos · <file> · X → Y` (the toast shows the folder's name: `Optimos` for the default, the chosen folder's own name for a custom one); two saves in the same second get different names.
 
 ## Confirm toolbar
 18. [ ] The toolbar appears below the selection at its right edge.
@@ -42,7 +44,7 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 21. [ ] Selections at the far left and far right keep the toolbar fully on screen.
 22. [ ] (2 displays) The toolbar appears on the display where you selected.
 23. [ ] Hovering each icon shows its tooltip, and clicking Copy, Save and Cancel each work.
-24. [ ] `Enter` and `⌘C` copy, `⌘S` saves, `Esc` cancels, and none of them does anything before a selection exists.
+24. [ ] `Enter` and `⌘C` copy, `⌘S` saves, `Esc` cancels. Before a selection exists, `Enter`, `⌘C` and `⌘S` do nothing; `Esc` closes the overlay.
 25. [ ] With the toolbar showing, Space does nothing.
 26. [ ] With the toolbar showing, dragging a new rectangle outside it discards the old selection and toolbar, and (2 displays) starting a selection on the other display removes the first display's toolbar.
 27. [ ] With the toolbar showing, right-click, pressing `⌃⌥⌘4` again and Cmd-Tab each dismiss the overlay with nothing copied.
@@ -55,19 +57,21 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 32. [ ] **Save Location…** opens a folder picker in front of other windows; choose another folder: the menu updates, the next Save writes there, and after quitting and relaunching the app the choice is still in place.
 33. [ ] Cancelling the picker changes nothing.
 34. [ ] **Show Last Screenshot in Finder** is disabled before the first save, reveals the file after a save, and is disabled again after you delete or move that file.
-35. [ ] Choose a folder, then delete it (or make it read-only with `chmod a-w <folder>`), then Save: a toast says `Save failed: …` and tells you to choose another folder, and no file is written anywhere else; restore the folder afterwards.
-36. [ ] The Copy flow and the `⌃⌥⌘3` instant copy are unchanged.
+35. [ ] This applies to a custom folder only (the default `~/Pictures/Optimos` is auto-created). Create a NEW empty test folder for this check (never use a folder with your own files), choose it with Save Location…, then make it fail: delete that empty folder, or make it read-only with `chmod a-w <folder>`. Press Save: a toast says `Save failed: …` and tells you to choose another folder, and no file is written anywhere else. Restore afterwards: `mkdir` the folder again, or `chmod u+w <folder>`.
+36. [ ] Choose a NEW empty test folder you created for this check (for example `~/Desktop/optimos-test-folder`), quit the app, rename that folder (for example to `optimos-test-folder-gone`), relaunch the app. Record what the menu's "Saving to:" line shows (expected: it still shows the remembered path, NOT the default). Capture an area and press Save: expected a toast `Save failed: …` telling you to choose another folder, and NO file written anywhere else (check `~/Pictures/Optimos` has no new file). Restore afterwards by renaming the folder back, or choose a different folder with Save Location….
+37. [ ] With no custom folder chosen (or after choosing `~/Pictures/Optimos` again), press Save once: the folder `~/Pictures/Optimos` is created if it did not exist and the file is written there.
+38. [ ] The Copy flow and the `⌃⌥⌘3` instant copy are unchanged.
 
 ## Focus and dismissal
-37. [ ] Dismissing the overlay: Esc, right-click, pressing `⌃⌥⌘4` again, and Cmd-Tab each close it with nothing copied. The overlay can never get stuck.
-38. [ ] Open the overlay and press Esc immediately, WITHOUT clicking first. Expected: the overlay closes.
-39. [ ] While the overlay is open, switch Space (Ctrl-arrow or Mission Control) and Cmd-Tab to another app. Expected: the overlay closes, and the app does NOT yank you back to the old Space or app afterwards.
-40. [ ] After a capture or an Esc cancel, keep typing without clicking anywhere. Expected: keystrokes go to the app you were using before (focus returns to it).
+39. [ ] Dismissing the overlay: Esc, right-click, pressing `⌃⌥⌘4` again, and Cmd-Tab each close it with nothing copied. The overlay can never get stuck.
+40. [ ] Open the overlay and press Esc immediately, WITHOUT clicking first. Expected: the overlay closes.
+41. [ ] While the overlay is open, switch Space (Ctrl-arrow or Mission Control) and Cmd-Tab to another app. Expected: the overlay closes, and the app does NOT yank you back to the old Space or app afterwards.
+42. [ ] After a capture or an Esc cancel, keep typing without clicking anywhere. Expected: keystrokes go to the app you were using before (focus returns to it).
 
 ## Edge cases
-41. [ ] A full-screen app (Safari or Xcode in full screen): the overlay appears over it and captures correctly.
-42. [ ] A second Space: the overlay appears on the current Space.
-43. [ ] Another app already owns `⌃⌥⌘4` (for example set it in System Settings > Keyboard): the menu shows a warning line for that shortcut and the other shortcuts still work.
-44. [ ] Missing tool: rename oxipng with `mv "$(brew --prefix)/bin/oxipng" "$(brew --prefix)/bin/oxipng.off"`, then capture. Expected: the unoptimized screenshot is still copied and the toast says `not optimized`. Restore it immediately, before continuing: `mv "$(brew --prefix)/bin/oxipng.off" "$(brew --prefix)/bin/oxipng"`, then run `which oxipng` (expected: prints the path).
-45. [ ] Trigger a long failure message (for example the missing-`oxipng` check combined with a Save, or the save failure above) and confirm the toast wraps to several lines and is fully visible (not cut off at the bottom).
-46. [ ] Quit from the menu: the app exits and the hotkeys stop working.
+43. [ ] A full-screen app (Safari or Xcode in full screen): the overlay appears over it and captures correctly.
+44. [ ] A second Space: the overlay appears on the current Space.
+45. [ ] Another app already owns `⌃⌥⌘4` (for example set it in System Settings > Keyboard): the menu shows a warning line for that shortcut and the other shortcuts still work.
+46. [ ] Missing tool: rename oxipng with `mv "$(brew --prefix)/bin/oxipng" "$(brew --prefix)/bin/oxipng.off"`, then capture. Expected: the unoptimized screenshot is still copied and the toast says `not optimized`. Restore it immediately, before continuing: `mv "$(brew --prefix)/bin/oxipng.off" "$(brew --prefix)/bin/oxipng"`, then run `which oxipng` (expected: prints the path).
+47. [ ] Trigger a long failure message with the save-failure case (item 35 or 36). Expected: the toast wraps to up to three lines and is fully visible, not cut off at the bottom.
+48. [ ] Quit from the menu: the app exits and the hotkeys stop working.
