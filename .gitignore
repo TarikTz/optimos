@@ -2,3 +2,8 @@
 .swiftpm/
 *.xcodeproj
 .DS_Store
+# macOS app (generated / personal)
+App/OptimosApp.xcodeproj/
+App/build/
+App/Config/Local.xcconfig
+xcuserdata/

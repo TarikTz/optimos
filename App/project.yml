@@ -1,0 +1,60 @@
+name: OptimosApp
+options:
+  bundleIdPrefix: app.optimos
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/Base.xcconfig
+  Release: Config/Base.xcconfig
+packages:
+  Optimos:
+    path: ..
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    ARCHS: arm64
+targets:
+  OptimosApp:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/OptimosApp
+    dependencies:
+      - package: Optimos
+        product: OptimosCore
+    info:
+      path: Sources/OptimosApp/Info.plist
+      properties:
+        CFBundleName: OptimosApp
+        CFBundleDisplayName: OptimosApp
+        LSUIElement: true
+        LSMinimumSystemVersion: "14.0"
+        NSScreenCaptureUsageDescription: OptimosApp captures the screen only when you press a capture shortcut. Images are processed on your Mac and never uploaded.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.optimos.OptimosApp
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: NO
+  OptimosAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/OptimosAppTests
+    dependencies:
+      - target: OptimosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.optimos.OptimosAppTests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  OptimosApp:
+    build:
+      targets:
+        OptimosApp: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - OptimosAppTests

@@ -1,0 +1,5 @@
+// Shared build settings. Defaults to ad-hoc signing so anyone can build and run the tests.
+// Personal signing (team id, Apple Development identity) goes in Local.xcconfig, which is git-ignored.
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+#include? "Local.xcconfig"
