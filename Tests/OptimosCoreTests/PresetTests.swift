@@ -18,6 +18,15 @@ import Testing
         #expect(github.format == .webp && github.maxWidth == 2000 && github.quality == 85)
         let slack = try #require(byName["Slack"])
         #expect(slack.format == .jpeg && slack.quality == 80 && slack.maxWidth == 1600)
+        #expect(slack.backgroundHex == "#FFFFFF")
+    }
+
+    // Final review 2: window screenshots have transparent shadows; Slack (JPEG) must flatten them.
+    @Test func slackPresetFlattensTransparentScreenshots() async throws {
+        let slack = try #require(Preset.builtIns.first { $0.name == "Slack" })
+        let result = try await slack.pipeline().run(Fixtures.png(transparent: true))
+        #expect(result.format == .jpeg)
+        #expect(try JPEGCodec().decode(result.bytes).width == 64)
     }
 
     @Test func websitePresetProducesAWebpWithoutUpscaling() async throws {

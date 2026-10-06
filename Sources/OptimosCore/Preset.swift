@@ -83,6 +83,6 @@ public struct Preset: Codable, Sendable, Equatable {
         Preset(name: "Website", format: .webp, quality: 82, maxWidth: 1600),
         Preset(name: "Screenshot", format: .png),
         Preset(name: "GitHub", format: .webp, quality: 85, maxWidth: 2000),
-        Preset(name: "Slack", format: .jpeg, quality: 80, maxWidth: 1600),
+        Preset(name: "Slack", format: .jpeg, quality: 80, maxWidth: 1600, backgroundHex: "#FFFFFF"),
     ]
 }
