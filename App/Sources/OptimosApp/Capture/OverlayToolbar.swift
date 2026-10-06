@@ -35,6 +35,12 @@ final class OverlayToolbar: NSVisualEffectView {
 
     required init?(coder: NSCoder) { fatalError("OverlayToolbar is created in code only") }
 
+    // Presses on the toolbar's padding or gaps must not reach the overlay view underneath, which
+    // would treat them as a new selection. Right-clicks are left alone so they still cancel.
+    override func mouseDown(with event: NSEvent) {}
+    override func mouseUp(with event: NSEvent) {}
+    override func mouseDragged(with event: NSEvent) {}
+
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: .arrow)
     }

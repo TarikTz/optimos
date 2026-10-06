@@ -49,7 +49,7 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 26. [ ] With the toolbar showing, dragging a new rectangle outside it discards the old selection and toolbar, and (2 displays) starting a selection on the other display removes the first display's toolbar.
 27. [ ] With the toolbar showing, right-click, pressing `⌃⌥⌘4` again and Cmd-Tab each dismiss the overlay with nothing copied.
 28. [ ] `Enter` and `Esc` work immediately after releasing the mouse WITHOUT clicking anywhere (the toolbar buttons must not take keyboard focus).
-29. [ ] Click the toolbar's padding between or around the three icons (not on an icon). Record whether the selection survives. Known: this may discard the selection and the toolbar (the press is treated as a new selection); re-select to continue.
+29. [ ] Click the toolbar's padding between or around the three icons (not on an icon). Expect the selection and the toolbar to survive, and in window mode the selection does not change to another window (Enter still copies the originally chosen region).
 30. [ ] (2 displays) With a selection confirmed on one display, move the pointer onto the OTHER display and press `Enter`, `⌘C` or `⌘S`. Record what happens. Known: these keys may do nothing until the pointer returns to the display with the selection; Esc still cancels.
 
 ## Save location
