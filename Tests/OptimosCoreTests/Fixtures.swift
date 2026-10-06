@@ -72,6 +72,30 @@ enum Fixtures {
             imageData(cgImage()), options: EncodeOptions(quality: lossless ? nil : quality, lossless: lossless))
     }
 
+    /// Lossless WebP whose pixels carry mixed alpha (30, 90, 200, 255) with varied colour,
+    /// built from straight RGBA so no premultiply step touches it.
+    static func semiTransparentLosslessWebP(width: Int = 64, height: Int = 48) -> Data {
+        let alphas: [UInt8] = [30, 90, 200, 255]
+        var px = [UInt8](repeating: 0, count: width * height * 4)
+        for y in 0..<height {
+            for x in 0..<width {
+                let o = (y * width + x) * 4
+                px[o] = UInt8((x * 37 + y * 11) % 256)
+                px[o + 1] = UInt8((y * 53 + x * 7) % 256)
+                px[o + 2] = UInt8((x * y * 13) % 256)
+                px[o + 3] = alphas[(x / 4 + y / 4) % alphas.count]
+            }
+        }
+        return try! WebPCodec.encode(straightRGBA: px, width: width, height: height, lossless: true)
+    }
+
+    /// Straight (non-premultiplied) sRGB RGBA. WebP comes straight from libwebp, so it is exact.
+    static func straightPixels(_ data: Data) throws -> [UInt8] {
+        if ImageFormat.sniff(data) == .webp { return try WebPCodec.straightRGBA(data).pixels }
+        let src = CGImageSourceCreateWithData(data as CFData, nil)!
+        return try Pixels.straightRGBA(CGImageSourceCreateImageAtIndex(src, 0, nil)!)
+    }
+
     /// Premultiplied sRGB pixels of any supported image, for equality checks.
     static func pixels(_ data: Data) throws -> [UInt8] {
         if ImageFormat.sniff(data) == .webp {
