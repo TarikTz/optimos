@@ -1,4 +1,5 @@
 import ArgumentParser
+import Foundation
 import OptimosCore
 
 struct OptimizeCommand: AsyncParsableCommand {
@@ -24,9 +25,11 @@ struct OptimizeCommand: AsyncParsableCommand {
         }
         var results: [FileResult] = []
         var claimedOutputs = Set<String>()
+        let runInputs = files.map { URL(fileURLWithPath: $0) }  // all inputs, known before anything is written
         for file in files {
             results.append(await processFile(
                 file, pipeline: pipeline, outputDirectory: output, suffix: ".optimized",
+                runInputs: runInputs,
                 claimedOutputs: &claimedOutputs))
         }
         try report(results, json: json)

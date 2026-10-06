@@ -49,13 +49,18 @@ func outputKey(_ url: URL) -> String {
     return (dir as NSString).appendingPathComponent(url.lastPathComponent).lowercased()
 }
 
+/// True if `dest` is the same file as any of the run's inputs (see `isSameFile`).
+func isRunInput(_ dest: URL, inputs: [URL]) -> Bool {
+    inputs.contains { isSameFile(dest, $0) }
+}
+
 /// Runs `pipeline` on one file and writes the result. Never overwrites the input, nor an output
 /// written earlier in the same run (`claimedOutputs` holds their `outputKey`s and gains this one).
 /// - `explicitOutput`: exact destination path.
 /// - otherwise `outputDirectory` (same file name), or next to the input with `suffix`.
 func processFile(
     _ path: String, pipeline: Pipeline, outputDirectory: String?, explicitOutput: String? = nil,
-    suffix: String, claimedOutputs: inout Set<String>
+    suffix: String, runInputs: [URL] = [], claimedOutputs: inout Set<String>
 ) async -> FileResult {
     do {
         let inURL = URL(fileURLWithPath: path)
@@ -72,6 +77,9 @@ func processFile(
         }
         if isSameFile(dest, inURL) {
             throw ValidationError("refusing to overwrite the input file; choose a different output")
+        }
+        if isRunInput(dest, inputs: runInputs) {
+            throw ValidationError("output would overwrite an input file in this run: \(dest.path)")
         }
         try FileManager.default.createDirectory(
             at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
