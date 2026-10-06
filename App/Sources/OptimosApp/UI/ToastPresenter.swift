@@ -9,11 +9,18 @@ struct ToastView: View {
         Text(message)
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(isWarning ? Color.orange : Color.primary)
+            .multilineTextAlignment(.center)
+            .lineLimit(3)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
-            .background(.regularMaterial, in: Capsule())
+            .frame(maxWidth: Self.maxWidth)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .padding(8)
     }
+
+    /// Long messages wrap at this width instead of running off both screen edges.
+    static let maxWidth: CGFloat = 480
 }
 
 @MainActor

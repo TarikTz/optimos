@@ -40,7 +40,7 @@ final class CaptureCoordinator {
         guard permission.isGranted else {
             permission.request()
             toast.show(
-                "Allow Screen Recording for OptimosApp in System Settings, then restart the app",
+                "Allow Screen Recording for OptimosApp in System Settings, then restart. If already on, remove OptimosApp from the list and add it again.",
                 isWarning: true, duration: 5)
             return
         }
@@ -51,7 +51,7 @@ final class CaptureCoordinator {
             case .captureAndSave: try await captureArea(save: true)
             }
         } catch {
-            toast.show("Capture failed: \(error)", isWarning: true, duration: 4)
+            toast.show("Capture failed: \(ErrorMessage.text(for: error))", isWarning: true, duration: 4)
         }
     }
 
