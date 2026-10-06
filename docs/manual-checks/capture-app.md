@@ -50,7 +50,7 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 27. [ ] With the toolbar showing, right-click, pressing `⌃⌥⌘4` again and Cmd-Tab each dismiss the overlay with nothing copied.
 28. [ ] `Enter` and `Esc` work immediately after releasing the mouse WITHOUT clicking anywhere (the toolbar buttons must not take keyboard focus).
 29. [ ] Click the toolbar's padding between or around the three icons (not on an icon). Expect the selection and the toolbar to survive, and in window mode the selection does not change to another window (Enter still copies the originally chosen region).
-30. [ ] (2 displays) With a selection confirmed on one display, move the pointer onto the OTHER display and press `Enter`, `⌘C` or `⌘S`. Record what happens. Known: these keys may do nothing until the pointer returns to the display with the selection; Esc still cancels.
+30. [ ] (2 displays) With a selection confirmed on one display, move the pointer onto the OTHER display and press `Enter`, `⌘C` or `⌘S`. Expect Enter, `⌘C` and `⌘S` to work wherever the pointer is while a selection is confirmed (same result as with the pointer on the selection's display), and Esc still cancels. Also start a new selection on the other display and confirm it works and its keys work.
 
 ## Save location
 31. [ ] The menu shows `Saving to: ~/Pictures/Optimos`.

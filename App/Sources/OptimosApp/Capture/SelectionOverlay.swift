@@ -46,6 +46,8 @@ final class SelectionView: NSView {
     var onConfirm: (() -> Void)?
     /// A new press began; the controller clears any confirmation on every display.
     var onBeginSelection: (() -> Void)?
+    /// The pointer entered this display; the controller decides whether this window takes key status.
+    var onPointerEntered: (() -> Void)?
 
     private let display: FrozenDisplay
     private let windows: [WindowInfo]
@@ -88,7 +90,7 @@ final class SelectionView: NSView {
     // MARK: Mouse
 
     override func mouseEntered(with event: NSEvent) {
-        window?.makeKeyAndOrderFront(nil)
+        onPointerEntered?()
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -103,6 +105,9 @@ final class SelectionView: NSView {
     override func mouseDown(with event: NSEvent) {
         // Pressing outside the toolbar starts over: any confirmed selection (on any display) is dropped.
         onBeginSelection?()
+        // The pointer may be on a display whose window never took key status while another display
+        // held a confirmed selection; starting a selection here makes this window key again.
+        window?.makeKeyAndOrderFront(nil)
         pressMode = mode
         guard mode == .area else { return }
         let point = convert(event.locationInWindow, from: nil)
@@ -156,6 +161,8 @@ final class SelectionView: NSView {
         addSubview(bar)
         toolbar = bar
         needsDisplay = true
+        // Enter/⌘C/⌘S must reach this view wherever the pointer goes next.
+        window?.makeKeyAndOrderFront(nil)
         onConfirm?()
     }
 
@@ -317,6 +324,11 @@ final class SelectionOverlayController {
             view.onToggleMode = { [weak self] in self?.toggleMode() }
             view.onConfirm = { [weak self, weak view] in self?.selectionConfirmed(on: view) }
             view.onBeginSelection = { [weak self] in self?.beginSelection() }
+            // While a selection is confirmed the key window stays put, so the confirm keys keep
+            // reaching the confirmed view even when the pointer moves to another display.
+            view.onPointerEntered = { [weak self, weak view] in
+                if self?.isConfirming == false { view?.window?.makeKeyAndOrderFront(nil) }
+            }
             views.append(view)
             overlayWindows.append(OverlayWindow(screen: screen, contentView: view))
         }
