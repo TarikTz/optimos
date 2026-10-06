@@ -33,7 +33,8 @@ final class ToastPresenter {
         panel?.orderOut(nil)
 
         let host = NSHostingView(rootView: ToastView(message: message, isWarning: isWarning))
-        let size = host.fittingSize
+        let size = ToastSizing.size(for: message, isWarning: isWarning)
+        host.frame = NSRect(origin: .zero, size: size)
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
