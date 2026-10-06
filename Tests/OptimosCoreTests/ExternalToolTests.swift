@@ -17,4 +17,12 @@ import Testing
             try tool.run([], input: Data())
         }
     }
+
+    @Test func toolExitingBeforeReadingStdinDoesNotCrash() throws {
+        let tool = ExternalTool(name: "true", searchPaths: ["/usr/bin"])
+        let input = Data(count: 1_000_000)
+        let result = try tool.run([], input: input)
+        #expect(result.status == 0)
+        #expect(result.output.isEmpty)
+    }
 }

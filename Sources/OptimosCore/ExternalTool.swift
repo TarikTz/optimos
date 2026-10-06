@@ -41,6 +41,8 @@ struct ExternalTool: Sendable {
         process.executableURL = try locate()
         process.arguments = arguments
         let stdin = Pipe(), stdout = Pipe(), stderr = Pipe()
+        // Per-fd (not process-wide): a tool that exits early yields EPIPE instead of SIGPIPE.
+        _ = fcntl(stdin.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
         process.standardInput = stdin
         process.standardOutput = stdout
         process.standardError = stderr
