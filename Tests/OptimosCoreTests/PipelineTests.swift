@@ -49,6 +49,31 @@ import Testing
         #expect(result.savedBytes == 0)
     }
 
+    // Final review 1a: the never-larger fallback must still honour StripMetadata.
+    @Test func neverLargerFallbackStillStripsGPS() async throws {
+        let pipeline = Pipeline(
+            operations: [StripMetadata(), Optimize()], output: OutputSpec(options: EncodeOptions(quality: 100)))
+        for orientation in [1, 6] {
+            let input = Fixtures.jpeg(orientation: orientation, quality: 0.3, gps: true)
+            #expect(Fixtures.hasGPS(input))
+            // Precondition: the q100 re-encode really is not smaller, so the guard falls back.
+            var image = try JPEGCodec().decode(input)
+            for operation in pipeline.operations { image = try operation.apply(image) }
+            #expect(try JPEGCodec().encode(image, options: pipeline.output.options).count >= input.count)
+
+            let result = try await pipeline.run(input)
+            #expect(!Fixtures.hasGPS(result.bytes))
+            #expect(result.newSize <= result.originalSize)
+            #expect(result.newSize == result.bytes.count)
+            #expect(try JPEGCodec().decode(result.bytes).orientation == orientation)
+            #expect(try Fixtures.pixels(result.bytes) == Fixtures.pixels(input))  // lossless strip
+
+            let optimized = try await Pipeline.defaultOptimize.run(input)
+            #expect(optimized.newSize <= optimized.originalSize)
+            #expect(!Fixtures.hasGPS(optimized.bytes))
+        }
+    }
+
     @Test func explicitResizeReturnsRequestedResultEvenIfLarger() async throws {
         let pipeline = Pipeline(operations: [Resize(.exact(width: 640, height: 480))])
         let result = try await pipeline.run(Fixtures.png())

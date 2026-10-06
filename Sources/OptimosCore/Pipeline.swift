@@ -62,9 +62,23 @@ public struct Pipeline: Sendable {
 
         // Never-larger guardrail: only for a plain same-format optimize (no resize).
         if outFormat == inFormat, !image.pixelsModified, bytes.count >= input.count {
-            return ProcessedImage(bytes: input, format: inFormat, originalSize: input.count, newSize: input.count)
+            let fallback = image.stripMetadata ? try losslesslyStripped(input, image: image) : input
+            return ProcessedImage(
+                bytes: fallback, format: inFormat, originalSize: input.count, newSize: fallback.count)
         }
         return ProcessedImage(bytes: bytes, format: outFormat, originalSize: input.count, newSize: bytes.count)
+    }
+
+    /// The input with metadata stripped but pixels untouched, or the input itself if
+    /// stripping would make it larger (WebP is returned unchanged by design).
+    private func losslesslyStripped(_ input: Data, image: ImageData) throws -> Data {
+        let stripped: Data
+        switch image.format {
+        case .jpeg: stripped = try JPEGCodec.losslessStrip(input, orientation: image.orientation)
+        case .png: stripped = try PNGCodec.oxipng(input, strip: true)
+        case .webp: return input
+        }
+        return stripped.count <= input.count ? stripped : input
     }
 
     private func checkCancelled() throws {

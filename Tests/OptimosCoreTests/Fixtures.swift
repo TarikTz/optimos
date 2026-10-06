@@ -36,16 +36,29 @@ enum Fixtures {
             cgImage(width: width, height: height, transparent: transparent, space: space), as: .png)
     }
 
+    /// With `gps`, the file carries an EXIF GPS block (latitude/longitude).
     static func jpeg(
-        width: Int = 64, height: Int = 48, orientation: Int = 1, quality: Double = 0.9
+        width: Int = 64, height: Int = 48, orientation: Int = 1, quality: Double = 0.9, gps: Bool = false
     ) -> Data {
         let flat = try! Pixels.flattened(cgImage(width: width, height: height), onto: .white)
-        return try! ImageIOSupport.encode(
-            flat, as: .jpeg,
-            properties: [
-                kCGImagePropertyOrientation: orientation,
-                kCGImageDestinationLossyCompressionQuality: quality,
-            ])
+        var properties: [CFString: Any] = [
+            kCGImagePropertyOrientation: orientation,
+            kCGImageDestinationLossyCompressionQuality: quality,
+        ]
+        if gps {
+            properties[kCGImagePropertyGPSDictionary] = [
+                kCGImagePropertyGPSLatitude: 43.8563, kCGImagePropertyGPSLatitudeRef: "N",
+                kCGImagePropertyGPSLongitude: 18.4131, kCGImagePropertyGPSLongitudeRef: "E",
+            ] as [CFString: Any]
+        }
+        return try! ImageIOSupport.encode(flat, as: .jpeg, properties: properties)
+    }
+
+    /// True if ImageIO sees a GPS dictionary in the image's properties.
+    static func hasGPS(_ data: Data) -> Bool {
+        let src = CGImageSourceCreateWithData(data as CFData, nil)!
+        let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
+        return props?[kCGImagePropertyGPSDictionary] != nil
     }
 
     static func imageData(_ image: CGImage) -> ImageData {

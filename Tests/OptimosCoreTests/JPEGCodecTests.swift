@@ -23,6 +23,19 @@ import Testing
         #expect(try JPEGCodec().decode(out).orientation == 6)
     }
 
+    // Final review 1b: a rotated photo keeps its orientation but loses GPS, losslessly.
+    @Test func optimizeOfRotatedPhotoDropsGPSKeepsOrientationAndPixels() throws {
+        let input = Fixtures.jpeg(orientation: 6, gps: true)
+        #expect(Fixtures.hasGPS(input))
+        var image = try JPEGCodec().decode(input)
+        image.optimize = true
+        image.stripMetadata = true
+        let out = try JPEGCodec().encode(image, options: EncodeOptions())
+        #expect(!Fixtures.hasGPS(out))
+        #expect(try JPEGCodec().decode(out).orientation == 6)
+        #expect(try Fixtures.pixels(out) == Fixtures.pixels(input))
+    }
+
     // Invariant: alpha is never silently dropped.
     @Test func transparentImageToJpegThrows() throws {
         let image = Fixtures.imageData(Fixtures.cgImage(transparent: true))
