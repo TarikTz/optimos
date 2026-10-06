@@ -22,10 +22,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApp.setActivationPolicy(.accessory)
         let permission = PermissionService()
+        let saveLocation = SaveLocationStore()
         let coordinator = CaptureCoordinator(
-            capture: ScreenCaptureKitService(), output: OutputService(), permission: permission,
-            toast: ToastPresenter(), overlay: SelectionOverlayController())
-        let menuBar = MenuBarController(permission: permission)
+            capture: ScreenCaptureKitService(), output: OutputService(saveDirectory: { saveLocation.directory }),
+            permission: permission, toast: ToastPresenter(), overlay: SelectionOverlayController())
+        let menuBar = MenuBarController(permission: permission, saveLocation: saveLocation)
         menuBar.onAction = { coordinator.perform($0) }
         hotkeys.onAction = { coordinator.perform($0) }
         menuBar.setFailedHotkeys(hotkeys.register(Hotkey.defaults))

@@ -59,8 +59,10 @@ struct OutputResult: Equatable, Sendable {
         case .clipboard:
             return warning.map { "Copied — \($0)" } ?? "Copied · \(sizes)"
         case .file(let url):
-            return warning.map { "Saved \(url.lastPathComponent) — \($0)" }
-                ?? "Saved \(url.lastPathComponent) · \(sizes)"
+            let folder = url.deletingLastPathComponent().lastPathComponent
+            let name = url.lastPathComponent
+            return warning.map { "Saved to \(folder) · \(name) — \($0)" }
+                ?? "Saved to \(folder) · \(name) · \(sizes)"
         }
     }
 
@@ -73,13 +75,14 @@ struct OutputService: Sendable {
     typealias Optimizer = @Sendable (Data) async throws -> Data
 
     var pasteboard: any Pasteboard
-    var saveDirectory: URL
+    /// Read at save time, so a folder chosen in the menu takes effect immediately.
+    var saveDirectory: @Sendable () -> URL
     var optimizer: Optimizer
     var now: @Sendable () -> Date
 
     init(
         pasteboard: any Pasteboard = SystemPasteboard(),
-        saveDirectory: URL = OutputService.defaultSaveDirectory,
+        saveDirectory: @escaping @Sendable () -> URL = { SaveLocationStore.defaultDirectory },
         optimizer: @escaping Optimizer = OutputService.screenshotOptimizer,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
@@ -87,11 +90,6 @@ struct OutputService: Sendable {
         self.saveDirectory = saveDirectory
         self.optimizer = optimizer
         self.now = now
-    }
-
-    static var defaultSaveDirectory: URL {
-        FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Optimos", isDirectory: true)
     }
 
     /// OptimosCore's built-in Screenshot preset: lossless PNG, metadata stripped.
@@ -137,13 +135,14 @@ struct OutputService: Sendable {
 
     private func write(_ bytes: Data) throws -> URL {
         do {
-            try FileManager.default.createDirectory(at: saveDirectory, withIntermediateDirectories: true)
+            let directory = saveDirectory()
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let name = ScreenshotFilename.make(for: now())
             let base = (name as NSString).deletingPathExtension
-            var url = saveDirectory.appendingPathComponent(name)
+            var url = directory.appendingPathComponent(name)
             var counter = 2
             while FileManager.default.fileExists(atPath: url.path) {
-                url = saveDirectory.appendingPathComponent("\(base) \(counter).png")
+                url = directory.appendingPathComponent("\(base) \(counter).png")
                 counter += 1
             }
             try bytes.write(to: url, options: .atomic)

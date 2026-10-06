@@ -6,11 +6,16 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let permission: PermissionService
+    private let saveLocation: SaveLocationStore
     private let hotkeys: [HotkeyAction: Hotkey]
     private var failedHotkeys: [HotkeyAction] = []
 
-    init(permission: PermissionService, hotkeys: [HotkeyAction: Hotkey] = Hotkey.defaults) {
+    init(
+        permission: PermissionService, saveLocation: SaveLocationStore,
+        hotkeys: [HotkeyAction: Hotkey] = Hotkey.defaults
+    ) {
         self.permission = permission
+        self.saveLocation = saveLocation
         self.hotkeys = hotkeys
         super.init()
         statusItem.button?.image = NSImage(
@@ -40,6 +45,25 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             item.representedObject = NSNumber(value: action.rawValue)
             menu.addItem(item)
         }
+
+        menu.addItem(.separator())
+        let current = NSMenuItem(title: "Saving to: \(saveLocation.displayPath)", action: nil, keyEquivalent: "")
+        current.isEnabled = false
+        menu.addItem(current)
+        let choose = NSMenuItem(title: "Save Location…", action: #selector(chooseSaveLocation), keyEquivalent: "")
+        choose.target = self
+        menu.addItem(choose)
+        let reveal = NSMenuItem(
+            title: "Show Last Screenshot in Finder", action: #selector(revealLastScreenshot), keyEquivalent: "")
+        reveal.target = self
+        // Disabled until something has been saved, and again if that file was moved or deleted.
+        if let last = saveLocation.lastSavedFile, FileManager.default.fileExists(atPath: last.path) {
+            reveal.isEnabled = true
+        } else {
+            reveal.isEnabled = false
+        }
+        menu.addItem(reveal)
+
         menu.addItem(.separator())
         if permission.isGranted {
             let item = NSMenuItem(title: "Screen Recording: allowed", action: nil, keyEquivalent: "")
@@ -69,6 +93,27 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             let action = HotkeyAction(rawValue: number.uint32Value)
         else { return }
         onAction?(action)
+    }
+
+    @objc private func chooseSaveLocation() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        panel.message = "Choose the folder where screenshots are saved."
+        panel.directoryURL = saveLocation.directory
+        // An accessory app is not frontmost by default, and the panel would open behind other windows.
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }  // cancelled: nothing changes
+        saveLocation.setDirectory(url)
+        if let menu = statusItem.menu { rebuild(menu) }
+    }
+
+    @objc private func revealLastScreenshot() {
+        guard let last = saveLocation.lastSavedFile else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([last])
     }
 
     @objc private func grantAccess() {

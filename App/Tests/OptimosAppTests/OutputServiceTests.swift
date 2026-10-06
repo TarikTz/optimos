@@ -62,7 +62,7 @@ private func temporaryDirectory() -> URL {
         defer { try? FileManager.default.removeItem(at: directory) }
         let date = Date(timeIntervalSince1970: 1_800_000_000)
         let service = OutputService(
-            pasteboard: FakePasteboard(), saveDirectory: directory,
+            pasteboard: FakePasteboard(), saveDirectory: { directory },
             optimizer: { _ in Data("OPT".utf8) }, now: { date })
 
         let first = try await service.save(makeImage())
@@ -82,6 +82,28 @@ private func temporaryDirectory() -> URL {
         #expect(secondURL != firstURL)
         #expect(secondURL.lastPathComponent.hasSuffix(" 2.png"))
         #expect(FileManager.default.fileExists(atPath: firstURL.path))
+    }
+
+    @Test func saveToastNamesTheFolderAndTheFile() async throws {
+        let directory = temporaryDirectory().appendingPathComponent("Shots")
+        defer { try? FileManager.default.removeItem(at: directory.deletingLastPathComponent()) }
+        let service = OutputService(
+            pasteboard: FakePasteboard(), saveDirectory: { directory },
+            optimizer: { _ in Data("OPT".utf8) }, now: { Date(timeIntervalSince1970: 1_800_000_000) })
+        let result = try await service.save(makeImage())
+        #expect(result.toastMessage.hasPrefix("Saved to Shots · "))
+        #expect(result.toastMessage.contains(ScreenshotFilename.make(for: Date(timeIntervalSince1970: 1_800_000_000))))
+    }
+
+    @Test func savingToAnUnwritableLocationThrowsCannotWrite() async throws {
+        // A path whose parent is a regular file can never become a directory.
+        let blocker = temporaryDirectory()
+        try Data("x".utf8).write(to: blocker)
+        defer { try? FileManager.default.removeItem(at: blocker) }
+        let service = OutputService(
+            pasteboard: FakePasteboard(), saveDirectory: { blocker.appendingPathComponent("sub") },
+            optimizer: { _ in Data("OPT".utf8) })
+        await #expect(throws: OutputError.self) { try await service.save(makeImage()) }
     }
 
     /// Needs the optimizer tools from the README (oxipng) installed.
