@@ -143,6 +143,8 @@ final class SelectionOverlayController {
     private var overlayWindows: [OverlayWindow] = []
     private var continuation: CheckedContinuation<CaptureSelection?, Never>?
     private var resignObserver: NSObjectProtocol?
+    private var spaceObserver: NSObjectProtocol?
+    private var previousApp: NSRunningApplication?
 
     var isActive: Bool { continuation != nil }
 
@@ -170,6 +172,14 @@ final class SelectionOverlayController {
             return
         }
 
+        // Remember who had focus; an accessory app with no windows would otherwise stay frontmost
+        // after the overlay closes and swallow the user's typing.
+        if let front = NSWorkspace.shared.frontmostApplication,
+            front.processIdentifier != ProcessInfo.processInfo.processIdentifier
+        {
+            previousApp = front
+        }
+
         // Safety net: if the user switches away (Cmd-Tab, Mission Control), never leave a stuck overlay.
         resignObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didResignActiveNotification, object: nil, queue: .main
@@ -177,7 +187,17 @@ final class SelectionOverlayController {
             MainActor.assumeIsolated { self?.cancel() }
         }
 
+        // Mission Control / Space switches do not resign app activation, and the overlay is
+        // .stationary at screen-saver level, so it would stay drawn without this observer.
+        spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.cancel() }
+        }
+
         NSApp.activate(ignoringOtherApps: true)
+        // Make the view first responder so Esc works before the first click.
+        for window in overlayWindows { window.makeFirstResponder(window.contentView) }
         overlayWindows.forEach { $0.orderFrontRegardless() }
         let mouse = NSEvent.mouseLocation
         (overlayWindows.first { NSMouseInRect(mouse, $0.frame, false) } ?? overlayWindows[0])
@@ -187,10 +207,20 @@ final class SelectionOverlayController {
     private func finish(_ selection: CaptureSelection?) {
         guard let continuation else { return }
         self.continuation = nil
+        // Remove observers first so reactivating the previous app below cannot re-trigger cancel.
         if let resignObserver { NotificationCenter.default.removeObserver(resignObserver) }
+        if let spaceObserver { NSWorkspace.shared.notificationCenter.removeObserver(spaceObserver) }
         resignObserver = nil
+        spaceObserver = nil
         overlayWindows.forEach { $0.orderOut(nil) }
-        overlayWindows.removeAll()
+        // finish() can run inside a window's own mouseUp/rightMouseDown; keep the windows alive one
+        // more run-loop turn so the dispatching window is never deallocated mid-event.
+        let windowsToRelease = overlayWindows
+        overlayWindows = []
+        DispatchQueue.main.async { _ = windowsToRelease }
+        // Give keyboard focus back to the app the user was using.
+        previousApp?.activate(from: NSRunningApplication.current, options: [])
+        previousApp = nil
         continuation.resume(returning: selection)
     }
 }
