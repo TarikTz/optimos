@@ -40,4 +40,13 @@ import Testing
         }
         #expect(ok == runs)
     }
+
+    // Final review 6: an empty or relative OPTIMOS_TOOLS_DIR must not resolve against the cwd.
+    @Test func toolsDirectoryIgnoresEmptyAndRelativeValues() {
+        #expect(ExternalTool.toolsDirectory(from: [:]) == nil)
+        #expect(ExternalTool.toolsDirectory(from: ["OPTIMOS_TOOLS_DIR": ""]) == nil)
+        #expect(ExternalTool.toolsDirectory(from: ["OPTIMOS_TOOLS_DIR": "."]) == nil)
+        #expect(ExternalTool.toolsDirectory(from: ["OPTIMOS_TOOLS_DIR": "tools/bin"]) == nil)
+        #expect(ExternalTool.toolsDirectory(from: ["OPTIMOS_TOOLS_DIR": "/opt/tools"]) == "/opt/tools")
+    }
 }

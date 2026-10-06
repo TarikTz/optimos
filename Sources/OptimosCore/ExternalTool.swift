@@ -16,10 +16,16 @@ struct ExternalTool: Sendable {
 
     static var defaultSearchPaths: [String] {
         var paths: [String] = []
-        if let dir = ProcessInfo.processInfo.environment["OPTIMOS_TOOLS_DIR"] { paths.append(dir) }
+        if let dir = toolsDirectory(from: ProcessInfo.processInfo.environment) { paths.append(dir) }
         if let res = Bundle.main.resourceURL?.appendingPathComponent("tools").path { paths.append(res) }
         paths += ["/opt/homebrew/bin", "/opt/homebrew/opt/libjpeg-turbo/bin", "/usr/local/bin"]
         return paths
+    }
+
+    /// OPTIMOS_TOOLS_DIR, ignored unless it is an absolute path (empty or relative would mean the cwd).
+    static func toolsDirectory(from environment: [String: String]) -> String? {
+        guard let dir = environment["OPTIMOS_TOOLS_DIR"], dir.hasPrefix("/") else { return nil }
+        return dir
     }
 
     struct Result {
