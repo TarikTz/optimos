@@ -54,9 +54,16 @@ enum Fixtures {
             orientation: 1, isLossless: false, source: nil)
     }
 
+    static func webp(lossless: Bool, quality: Int = 80) -> Data {
+        try! WebPCodec().encode(
+            imageData(cgImage()), options: EncodeOptions(quality: lossless ? nil : quality, lossless: lossless))
+    }
+
     /// Premultiplied sRGB pixels of any supported image, for equality checks.
     static func pixels(_ data: Data) throws -> [UInt8] {
-        // WebP branch added in Task 6
+        if ImageFormat.sniff(data) == .webp {
+            return try Pixels.premultipliedRGBA(WebPCodec().decode(data).cgImage)
+        }
         let src = CGImageSourceCreateWithData(data as CFData, nil)!
         return try Pixels.premultipliedRGBA(CGImageSourceCreateImageAtIndex(src, 0, nil)!)
     }
