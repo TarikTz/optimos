@@ -80,7 +80,13 @@ final class CaptureCoordinator {
                 imageSize: CGSize(width: display.image.width, height: display.image.height)),
             let cropped = display.image.cropping(to: cropRect)
         else { throw CaptureError.cropFailed }
-        try await deliver(cropped, save: outcome.action == .save)
+        let scale = CGFloat(display.image.width) / display.info.frame.width
+        guard
+            let final = AnnotatedImageExporter.render(
+                cropped: cropped, annotations: outcome.annotations,
+                cropOrigin: CGPoint(x: cropRect.minX / scale, y: cropRect.minY / scale), pointScale: scale)
+        else { throw CaptureError.annotationFailed }
+        try await deliver(final, save: outcome.action == .save)
     }
 
     private func deliver(_ image: CGImage, save: Bool) async throws {

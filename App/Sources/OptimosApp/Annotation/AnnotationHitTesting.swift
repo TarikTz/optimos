@@ -1,0 +1,32 @@
+import CoreGraphics
+
+enum AnnotationHitTesting {
+    /// The annotation under `point`, or nil. Shapes drawn on top win over the pixelated areas that
+    /// are always rendered below them; among equals the most recently added wins.
+    static func annotation(at point: CGPoint, in annotations: [Annotation]) -> Annotation? {
+        let ordered = annotations.reversed()
+        return ordered.first { !$0.isPixelate && hits($0, point) } ?? ordered.first { $0.isPixelate && hits($0, point) }
+    }
+
+    static func hits(_ annotation: Annotation, _ point: CGPoint) -> Bool {
+        let tolerance = max(6, annotation.size.lineWidth + 3)
+        switch annotation.kind {
+        case .rectangle(let rect):
+            return rect.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
+                && !rect.insetBy(dx: tolerance, dy: tolerance).contains(point)
+        case .arrow(let from, let to):
+            return distance(from: point, toSegment: from, to) <= tolerance
+        case .text, .pixelate:
+            return annotation.bounds.contains(point)
+        }
+    }
+
+    static func distance(from p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> CGFloat {
+        let dx = b.x - a.x
+        let dy = b.y - a.y
+        let lengthSquared = dx * dx + dy * dy
+        guard lengthSquared > 0 else { return hypot(p.x - a.x, p.y - a.y) }
+        let t = max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared))
+        return hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+    }
+}

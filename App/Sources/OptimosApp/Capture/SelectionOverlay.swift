@@ -62,6 +62,19 @@ final class SelectionView: NSView {
     private var confirmedRect: CGRect?
     private var toolbar: OverlayToolbar?
 
+    // Annotation state for the confirmed selection.
+    private var document = AnnotationDocument()
+    private var tool: AnnotationTool = .select
+    private var color: AnnotationColor = .red
+    private var size: AnnotationSize = .medium
+    /// Where the current draw drag started, and the shape it is producing.
+    private var drawStart: CGPoint?
+    private var draftShape: Annotation?
+    /// The last point of the current move drag.
+    private var moveLast: CGPoint?
+    /// Text being typed inline; it becomes an annotation when finished.
+    private var textDraft: (origin: CGPoint, string: String)?
+
     init(display: FrozenDisplay, windows: [WindowInfo]) {
         self.display = display
         self.windows = windows
@@ -103,6 +116,9 @@ final class SelectionView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        if let rect = confirmedRect, handleAnnotationPress(at: convert(event.locationInWindow, from: nil), in: rect) {
+            return
+        }
         // Pressing outside the toolbar starts over: any confirmed selection (on any display) is dropped.
         onBeginSelection?()
         // The pointer may be on a display whose window never took key status while another display
@@ -116,6 +132,10 @@ final class SelectionView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        if let rect = confirmedRect, drawStart != nil || moveLast != nil {
+            dragAnnotation(to: convert(event.locationInWindow, from: nil), in: rect)
+            return
+        }
         if mode == .window {
             // Press-drag-release in window mode captures the window under the cursor at release,
             // so keep the highlight following the cursor while the button is down.
@@ -129,6 +149,10 @@ final class SelectionView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        if drawStart != nil || moveLast != nil {
+            finishAnnotationDrag()
+            return
+        }
         let pressMode = self.pressMode
         self.pressMode = nil
         switch mode {
@@ -152,7 +176,12 @@ final class SelectionView: NSView {
     /// Fixes the selection and shows the Copy / Save / Cancel toolbar next to it.
     private func confirm(_ rect: CGRect) {
         confirmedRect = rect
-        let bar = OverlayToolbar()
+        document = AnnotationDocument()
+        tool = .select
+        let bar = OverlayToolbar(tool: tool, color: color, size: size)
+        bar.onTool = { [weak self] in self?.setTool($0) }
+        bar.onColor = { [weak self] in self?.setColor($0) }
+        bar.onSize = { [weak self] in self?.setSize($0) }
         bar.onCopy = { [weak self] in self?.finish(with: .copy) }
         bar.onSave = { [weak self] in self?.finish(with: .save) }
         bar.onCancel = { [weak self] in self?.onFinish?(nil) }
@@ -170,6 +199,11 @@ final class SelectionView: NSView {
     func discardConfirmation() {
         guard confirmedRect != nil else { return }
         confirmedRect = nil
+        document = AnnotationDocument()
+        drawStart = nil
+        draftShape = nil
+        moveLast = nil
+        textDraft = nil
         toolbar?.removeFromSuperview()
         toolbar = nil
         updateHover()
@@ -178,8 +212,134 @@ final class SelectionView: NSView {
 
     private func finish(with action: CaptureAction) {
         guard let rect = confirmedRect else { return }
+        commitText()
         onFinish?(OverlayOutcome(
-            selection: CaptureSelection(displayID: display.info.id, rect: rect), action: action))
+            selection: CaptureSelection(displayID: display.info.id, rect: rect), action: action,
+            annotations: document.annotations))
+    }
+
+    // MARK: Annotations
+
+    /// Handles a press while a selection is confirmed. Returns false when the press should instead
+    /// start a new selection (only when no annotation work would be lost).
+    private func handleAnnotationPress(at point: CGPoint, in rect: CGRect) -> Bool {
+        commitText()
+        guard rect.contains(point) else { return !document.isEmpty }
+        switch tool {
+        case .select:
+            if let hit = AnnotationHitTesting.annotation(at: point, in: document.annotations) {
+                document.select(hit.id)
+                document.beginMove()
+                moveLast = point
+            } else if document.isEmpty {
+                return false
+            } else {
+                document.select(nil)
+            }
+        case .rectangle, .arrow, .pixelate:
+            document.select(nil)
+            drawStart = point
+            draftShape = shape(from: point, to: point)
+        case .text:
+            document.select(nil)
+            textDraft = (point, "")
+        }
+        needsDisplay = true
+        return true
+    }
+
+    private func shape(from start: CGPoint, to end: CGPoint) -> Annotation? {
+        let kind: AnnotationKind
+        switch tool {
+        case .rectangle: kind = .rectangle(CaptureGeometry.normalizedRect(from: start, to: end))
+        case .pixelate: kind = .pixelate(CaptureGeometry.normalizedRect(from: start, to: end))
+        case .arrow: kind = .arrow(from: start, to: end)
+        case .select, .text: return nil
+        }
+        return Annotation(kind: kind, color: color, size: size)
+    }
+
+    private func dragAnnotation(to point: CGPoint, in rect: CGRect) {
+        if let last = moveLast {
+            document.moveSelected(by: CGSize(width: point.x - last.x, height: point.y - last.y))
+            moveLast = point
+        } else if let start = drawStart {
+            let clamped = CGPoint(
+                x: min(max(point.x, rect.minX), rect.maxX), y: min(max(point.y, rect.minY), rect.maxY))
+            draftShape = shape(from: start, to: clamped)
+        }
+        needsDisplay = true
+    }
+
+    private func finishAnnotationDrag() {
+        defer {
+            drawStart = nil
+            draftShape = nil
+            moveLast = nil
+            pressMode = nil
+            needsDisplay = true
+        }
+        guard let shape = draftShape else { return }
+        let big: Bool
+        switch shape.kind {
+        case .rectangle(let rect), .pixelate(let rect): big = rect.width >= 3 && rect.height >= 3
+        case .arrow(let from, let to): big = hypot(to.x - from.x, to.y - from.y) >= 6
+        case .text: big = false
+        }
+        if big { document.add(shape) }
+    }
+
+    private func commitText() {
+        guard let draft = textDraft else { return }
+        textDraft = nil
+        needsDisplay = true
+        guard !draft.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        document.add(Annotation(kind: .text(origin: draft.origin, string: draft.string), color: color, size: size))
+    }
+
+    private func setTool(_ newTool: AnnotationTool) {
+        commitText()
+        tool = newTool
+        toolbar?.setTool(newTool)
+        needsDisplay = true
+    }
+
+    private func setColor(_ newColor: AnnotationColor) {
+        color = newColor
+        document.setColorOfSelected(newColor)
+        toolbar?.setColor(newColor)
+        needsDisplay = true
+    }
+
+    private func setSize(_ newSize: AnnotationSize) {
+        size = newSize
+        document.setSizeOfSelected(newSize)
+        toolbar?.setSize(newSize)
+        needsDisplay = true
+    }
+
+    /// Typing into the inline text box. Returns true when the key was consumed.
+    private func handleTextKey(_ event: NSEvent) -> Bool {
+        guard var draft = textDraft else { return false }
+        if event.modifierFlags.contains(.command) { return false }
+        switch event.keyCode {
+        case 53:  // Esc finishes the text; a second Esc cancels the overlay
+            commitText()
+            return true
+        case 51:
+            _ = draft.string.popLast()
+        case 36, 76:
+            draft.string.append("\n")
+        default:
+            // Printable characters only: arrows and other function keys arrive as private-use scalars.
+            let typed = (event.characters ?? "").unicodeScalars.filter {
+                $0.value >= 0x20 && $0.value != 0x7F && !(0xF700...0xF8FF).contains($0.value)
+            }
+            draft.string.unicodeScalars.append(contentsOf: typed)
+        }
+        textDraft = draft
+        needsDisplay = true
+        return true
     }
 
     override func rightMouseDown(with event: NSEvent) {
@@ -189,6 +349,7 @@ final class SelectionView: NSView {
     // MARK: Keyboard
 
     override func keyDown(with event: NSEvent) {
+        if textDraft != nil, handleTextKey(event) { return }
         if handle(event) { return }
         if event.keyCode == 49 {  // Space: toggles area/window; ignored while a selection is confirmed
             if !event.isARepeat && confirmedRect == nil { onToggleMode?() }
@@ -215,6 +376,19 @@ final class SelectionView: NSView {
         case .copy, .save:
             guard confirmedRect != nil else { return false }  // nothing to confirm yet
             finish(with: action == .copy ? .copy : .save)
+            return true
+        case .undo, .redo, .deleteSelected, .tool:
+            guard confirmedRect != nil else { return false }
+            // While typing text, history keys are swallowed so they cannot undo the previous step.
+            if textDraft != nil { return true }
+            switch action {
+            case .undo: document.undo()
+            case .redo: document.redo()
+            case .deleteSelected: document.deleteSelected()
+            case .tool(let newTool): setTool(newTool)
+            default: break
+            }
+            needsDisplay = true
             return true
         }
     }
@@ -261,12 +435,35 @@ final class SelectionView: NSView {
         NSColor.black.withAlphaComponent(0.4).setFill()
         dim.fill()
 
+        drawAnnotations()
+
         guard let highlight else { return }
         let border = NSBezierPath(rect: highlight)
         border.lineWidth = mode == .window ? 3 : 1
         (mode == .window ? NSColor.controlAccentColor : NSColor.white).setStroke()
         border.stroke()
         drawSizeLabel(for: highlight)
+    }
+
+    private func drawAnnotations() {
+        guard let rect = confirmedRect, let ctx = NSGraphicsContext.current?.cgContext else { return }
+        var items = document.annotations
+        if let draftShape { items.append(draftShape) }
+        if let textDraft {
+            items.append(
+                Annotation(kind: .text(origin: textDraft.origin, string: textDraft.string + "|"), color: color, size: size))
+        }
+        ctx.saveGState()
+        ctx.clip(to: rect)
+        AnnotationRenderer.draw(
+            items, in: ctx, source: display.image, pointScale: CGFloat(display.image.width) / bounds.width)
+        if let selected = document.selected {
+            ctx.setStrokeColor(NSColor.controlAccentColor.cgColor)
+            ctx.setLineWidth(1.5)
+            ctx.setLineDash(phase: 0, lengths: [4, 3])
+            ctx.stroke(selected.bounds.insetBy(dx: -4, dy: -4))
+        }
+        ctx.restoreGState()
     }
 
     private func drawSizeLabel(for rect: CGRect) {

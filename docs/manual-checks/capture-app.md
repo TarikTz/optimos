@@ -75,3 +75,15 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 46. [ ] Missing tool: rename oxipng with `mv "$(brew --prefix)/bin/oxipng" "$(brew --prefix)/bin/oxipng.off"`, then capture. Expected: the unoptimized screenshot is still copied and the toast says `not optimized`. Restore it immediately, before continuing: `mv "$(brew --prefix)/bin/oxipng.off" "$(brew --prefix)/bin/oxipng"`, then run `which oxipng` (expected: prints the path).
 47. [ ] Trigger a long failure message with the save-failure case (item 35 or 36). Expected: the toast wraps to up to three lines and is fully visible, not cut off at the bottom.
 48. [ ] Quit from the menu: the app exits and the hotkeys stop working.
+
+## Annotations
+49. [ ] Select an area. The toolbar shows five tools, six colours, three sizes, then Copy / Save / Cancel, and fits on screen (also for a selection near a screen edge).
+50. [ ] Pick Rectangle (or press `R`) and drag inside the selection: a red rectangle appears. Same for Arrow (`A`): a line with an arrow head.
+51. [ ] Pick Text (`T`), click in the selection and type. Expected: text appears with a caret; `Return` adds a new line and does NOT copy; the first `Esc` finishes the text; a second `Esc` closes the overlay.
+52. [ ] Pick Pixelate (`P`) and drag over text. Expected: the area becomes large blocks and the text under it cannot be read; a rectangle drawn over it stays sharp.
+53. [ ] Pick Select (`V`), click an annotation (the edge of a rectangle, the line of an arrow, the text, the inside of a pixelate area), drag it, press `Delete`. Expected: it is selected with a dashed outline, moves, and is removed.
+54. [ ] `⌘Z` undoes the last step (add, move, delete, recolour) and `⇧⌘Z` redoes it. A whole drag-move is one step.
+55. [ ] With an annotation selected, click another colour or size. Expected: that annotation changes; the next one you draw uses the new choice.
+56. [ ] Press Copy, then paste into an app, and do the same with Save. Expected: the image contains the annotations exactly as shown, including pixelation, at full Retina sharpness.
+57. [ ] With annotations drawn, press outside the selection. Expected: nothing happens (the work is kept). With no annotations, pressing outside still starts a new selection. `Esc`, right-click and Cmd-Tab still close the overlay.
+

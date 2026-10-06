@@ -36,7 +36,7 @@ Default shortcuts (rebinding comes in a later release):
 
 | Shortcut | Action |
 |---|---|
-| `⌃⌥⌘4` | Capture an area, or press Space to pick a window. A toolbar then appears next to the selection: **Copy** (`Enter` or `⌘C`), **Save** (`⌘S`) or **Cancel** (`Esc`). Dragging again outside the toolbar starts a new selection. |
+| `⌃⌥⌘4` | Capture an area, or press Space to pick a window. A toolbar then appears next to the selection: **Copy** (`Enter` or `⌘C`), **Save** (`⌘S`) or **Cancel** (`Esc`). Dragging again outside the toolbar starts a new selection. The toolbar also has annotation tools: select/move (`V`), rectangle (`R`), arrow (`A`), text (`T`) and hide-sensitive-content pixelate (`P`), with colour and size pickers, `⌘Z` / `⇧⌘Z` undo and redo, and `Delete` to remove the selected annotation. Copy and Save include the annotations. |
 | `⌃⌥⌘3` | Capture the screen under the mouse and copy it immediately |
 
 Saved screenshots go to `~/Pictures/Optimos/` by default. Choose another folder with **Save Location…** in the menu-bar menu; the menu always shows the current folder, and **Show Last Screenshot in Finder** reveals the last saved file.

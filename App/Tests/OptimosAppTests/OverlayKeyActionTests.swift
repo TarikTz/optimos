@@ -51,4 +51,18 @@ import Testing
         #expect(action(8, [.command, .shift, .capsLock]) == nil)
         #expect(action(1, [.option, .capsLock]) == nil)
     }
+
+    @Test func undoRedoDeleteAndToolKeys() {
+        #expect(action(6, .command) == .undo)
+        #expect(action(6, [.command, .shift]) == .redo)
+        #expect(action(6) == nil)
+        #expect(action(51) == .deleteSelected)
+        #expect(action(117) == .deleteSelected)
+        #expect(action(15) == .tool(.rectangle))
+        #expect(action(0) == .tool(.arrow))
+        #expect(action(17) == .tool(.text))
+        #expect(action(35) == .tool(.pixelate))
+        #expect(action(9) == .tool(.select))
+        #expect(action(15, .command) == nil)
+    }
 }

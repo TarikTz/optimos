@@ -14,12 +14,14 @@ enum CaptureError: Error, CustomStringConvertible {
     case noDisplays
     case displayNotFound
     case cropFailed
+    case annotationFailed
 
     var description: String {
         switch self {
         case .noDisplays: "no display found"
         case .displayNotFound: "that display is no longer available"
         case .cropFailed: "the selection was outside the screen"
+        case .annotationFailed: "the annotations could not be added to the image"
         }
     }
 }
