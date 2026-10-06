@@ -1,0 +1,5 @@
+module CWebP [system] {
+    header "/opt/homebrew/opt/webp/include/webp/encode.h"
+    header "/opt/homebrew/opt/webp/include/webp/decode.h"
+    export *
+}
