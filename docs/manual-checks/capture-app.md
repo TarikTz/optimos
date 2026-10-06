@@ -8,7 +8,11 @@ macOS / displays used:
 Known limitations (see spec): window capture is a crop (overlapping windows included, no shadow); selection stays within one display; hotkeys are not rebindable yet.
 
 Setup: copy `App/Config/Local.xcconfig.example` to `App/Config/Local.xcconfig` and set your team id so
-Screen Recording permission survives rebuilds. Install the tools: `brew install xcodegen webp oxipng pngquant libjpeg-turbo`.
+Screen Recording permission survives rebuilds (a free Apple ID "Apple Development" certificate is enough).
+If Screen Recording already shows OptimosApp as allowed but the app keeps asking (this happens after rebuilds
+of an ad-hoc signed build): run `tccutil reset ScreenCapture app.optimos.OptimosApp`, relaunch the app, and
+grant access again. On macOS 15 and later the system may periodically ask you to re-confirm screen recording
+for apps like this; if a capture seems to hang, look for that prompt. Install the tools: `brew install xcodegen webp oxipng pngquant libjpeg-turbo`.
 
 ## Permission and menu
 1. [ ] First launch with no Screen Recording permission: press `⌃⌥⌘3`. A toast asks you to allow Screen Recording and restart; the system prompt appears; nothing crashes.
