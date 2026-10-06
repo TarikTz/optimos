@@ -48,20 +48,23 @@ struct ExternalTool: Sendable {
         process.standardError = stderr
         try process.run()
 
+        // The pumps get dedicated threads, not GCD's global queue: callers block a cooperative
+        // thread in here, and once every one of those is blocked the global queue gets no worker,
+        // the tools wait on stdin forever, and the whole process deadlocks.
         let output = Box(Data()), errors = Box(Data())
         let group = DispatchGroup()
         group.enter()
-        DispatchQueue.global().async {
+        Thread.detachNewThread {
             output.value = stdout.fileHandleForReading.readDataToEndOfFile()
             group.leave()
         }
         group.enter()
-        DispatchQueue.global().async {
+        Thread.detachNewThread {
             errors.value = stderr.fileHandleForReading.readDataToEndOfFile()
             group.leave()
         }
         // Write on its own thread so a full stdout pipe cannot deadlock us.
-        DispatchQueue.global().async {
+        Thread.detachNewThread {
             try? stdin.fileHandleForWriting.write(contentsOf: input)
             try? stdin.fileHandleForWriting.close()
         }

@@ -25,4 +25,19 @@ import Testing
         #expect(result.status == 0)
         #expect(result.output.isEmpty)
     }
+
+    // Callers block a cooperative thread inside run(). With more concurrent runs than cores the
+    // stdin/stdout pumps must still get threads, or every tool waits on stdin forever.
+    @Test(.timeLimit(.minutes(1)))
+    func manyConcurrentRunsDoNotStarve() async throws {
+        let input = Data((0..<200_000).map { UInt8($0 % 251) })  // larger than a pipe buffer
+        let runs = ProcessInfo.processInfo.activeProcessorCount * 3
+        let ok = try await withThrowingTaskGroup(of: Bool.self) { group in
+            for _ in 0..<runs {
+                group.addTask { try ExternalTool(name: "cat", searchPaths: ["/bin"]).run([], input: input).output == input }
+            }
+            return try await group.reduce(0) { $0 + ($1 ? 1 : 0) }
+        }
+        #expect(ok == runs)
+    }
 }
