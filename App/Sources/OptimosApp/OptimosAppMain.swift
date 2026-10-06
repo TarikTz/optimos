@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let permission = PermissionService()
         let coordinator = CaptureCoordinator(
             capture: ScreenCaptureKitService(), output: OutputService(), permission: permission,
-            toast: ToastPresenter())
+            toast: ToastPresenter(), overlay: SelectionOverlayController())
         let menuBar = MenuBarController(permission: permission)
         menuBar.onAction = { coordinator.perform($0) }
         hotkeys.onAction = { coordinator.perform($0) }
