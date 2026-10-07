@@ -7,7 +7,7 @@ Open **Optimize Images…** from the menu-bar menu. Use copies of real images, n
 2. [ ] Drop a few PNG and JPEG files. Expected: each row shows a spinner, then `old → new (−N%)`. The files on disk are smaller and open normally.
 3. [ ] Drop the same files again. Expected: they are not added twice.
 4. [ ] Drop a folder with images in subfolders plus a `.txt` file and a hidden image. Expected: only the visible supported images are added.
-5. [ ] Drop a `.txt` or `.heic` file by itself. Expected: that row says "unsupported or unrecognised image format" in red; other rows are unaffected.
+5. [ ] Drop a `.txt` or `.gif` file by itself. Expected: that row says "unsupported or unrecognised image format" in red; other rows are unaffected.
 6. [ ] The `+` button opens a panel where files and folders can be chosen; chosen items are processed.
 
 ## Levels, format and size
@@ -30,4 +30,10 @@ Open **Optimize Images…** from the menu-bar menu. Use copies of real images, n
 19. [ ] With the window open, click another app so the window is hidden. Expected: OptimosApp shows a Dock icon and appears in Cmd-Tab; Cmd-Tab (or the Dock icon) brings the window back.
 20. [ ] Close the window. Expected: the Dock icon and Cmd-Tab entry disappear again; the menu-bar icon and capture shortcuts still work.
 21. [ ] With the window open, use `⌃⌥⌘4`: the capture overlay works as before.
+
+## HEIC, TIFF and BMP
+22. [ ] Drop an iPhone `.heic` photo with Format "Keep format". Expected: a new `.jpg` appears next to it, upright (not rotated), the `.heic` is untouched, and the row shows the new name and sizes.
+23. [ ] The same photo with Format WebP and PNG gives `.webp` and `.png`; Max size shrinks it; Level changes the size.
+24. [ ] Drop a `.tiff` or `.bmp`: with "Keep format" the result is a `.png`; originals are never replaced. Undo removes the new files.
+25. [ ] A folder containing HEIC, TIFF and BMP files adds them; the `+` panel lets you pick them.
 

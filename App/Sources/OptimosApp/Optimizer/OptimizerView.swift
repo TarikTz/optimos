@@ -38,7 +38,7 @@ struct OptimizerView: View {
                 .font(.system(size: 54, weight: .light))
             Text("Drop images or folders here")
                 .font(.title3)
-            Text("PNG, JPEG and WebP")
+            Text("PNG, JPEG, WebP, plus HEIC, TIFF and BMP to convert")
                 .font(.callout)
         }
         .foregroundStyle(.secondary)
@@ -126,7 +126,7 @@ private struct OptimizerBar: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.allowedContentTypes = [.png, .jpeg, .webP, .folder]
+        panel.allowedContentTypes = [.png, .jpeg, .webP, .heic, .heif, .tiff, .bmp, .folder]
         panel.prompt = "Add"
         if panel.runModal() == .OK { model.add(panel.urls) }
     }

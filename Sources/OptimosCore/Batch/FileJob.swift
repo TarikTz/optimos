@@ -28,31 +28,44 @@ public enum FileJob {
     public static func run(
         _ url: URL, settings: OptimizeSettings, willReplace: @Sendable (URL) throws -> Void = { _ in }
     ) async throws -> FileJobResult {
-        let input = try Data(contentsOf: url)
-        guard let inputFormat = ImageFormat.sniff(input) else { throw OptimosError.unsupportedFormat }
+        let original = try Data(contentsOf: url)
+        var input = original
+        var settings = settings
+        var inputFormat: ImageFormat
+        var isConvertibleOnly = false  // HEIC, TIFF, BMP: never replaced, always converted
+        if let sniffed = ImageFormat.sniff(original) {
+            inputFormat = sniffed
+        } else if let decoded = try ConvertibleInput.decode(original) {
+            input = decoded.png
+            inputFormat = .png
+            isConvertibleOnly = true
+            if settings.format == nil { settings.format = decoded.defaultTarget }
+        } else {
+            throw OptimosError.unsupportedFormat
+        }
         let willShrink = settings.willShrink(input)
         let result = try await settings.pipeline(inputFormat: inputFormat, willShrink: willShrink).run(input)
 
-        if result.format == inputFormat {
+        if result.format == inputFormat && !isConvertibleOnly {
             // A requested shrink counts even if the bytes did not drop; otherwise only a smaller file wins.
             guard result.newSize < result.originalSize || willShrink else {
                 return FileJobResult(
-                    source: url, outcome: .alreadyOptimal, originalBytes: input.count, newBytes: input.count)
+                    source: url, outcome: .alreadyOptimal, originalBytes: original.count, newBytes: original.count)
             }
             if !settings.replaceOriginals {
                 let output = try writeNew(result.bytes, besides: url, suffix: "-optimized", format: result.format)
                 return FileJobResult(
-                    source: url, outcome: .converted(output: output), originalBytes: input.count,
+                    source: url, outcome: .converted(output: output), originalBytes: original.count,
                     newBytes: result.newSize)
             }
             try willReplace(url)
             try replace(url, with: result.bytes)
             return FileJobResult(
-                source: url, outcome: .replaced, originalBytes: input.count, newBytes: result.newSize)
+                source: url, outcome: .replaced, originalBytes: original.count, newBytes: result.newSize)
         }
         let output = try writeNew(result.bytes, besides: url, suffix: "", format: result.format)
         return FileJobResult(
-            source: url, outcome: .converted(output: output), originalBytes: input.count,
+            source: url, outcome: .converted(output: output), originalBytes: original.count,
             newBytes: result.newSize)
     }
 

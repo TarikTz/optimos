@@ -1,7 +1,7 @@
 import Foundation
 
 public enum ImageFileScanner {
-    static let supportedExtensions: Set<String> = ["png", "jpg", "jpeg", "webp"]
+    static let supportedExtensions: Set<String> = Set(["png", "jpg", "jpeg", "webp"]).union(ConvertibleInput.fileExtensions)
 
     /// Files you named are returned as they are (an unsupported one fails later with a clear message).
     /// Folders are searched, keeping only supported images and skipping hidden files. No duplicates.

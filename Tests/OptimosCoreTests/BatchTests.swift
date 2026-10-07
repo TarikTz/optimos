@@ -1,5 +1,6 @@
 import Foundation
 import ImageIO
+import UniformTypeIdentifiers
 import Testing
 @testable import OptimosCore
 
@@ -203,5 +204,62 @@ private func size(of data: Data) -> (Int, Int) {
         let out = try await OptimizeSettings(level: .balanced, format: .webp).process(Fixtures.png())
         #expect(out.format == .webp)
         #expect(ImageFormat.sniff(out.bytes) == .webp)
+    }
+}
+
+@Suite struct ConvertibleInputTests {
+    private func encoded(_ type: UTType, orientation: Int = 1) throws -> Data {
+        let out = NSMutableData()
+        let dest = try #require(CGImageDestinationCreateWithData(out, type.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(dest, Fixtures.cgImage(width: 120, height: 80), [kCGImagePropertyOrientation: orientation] as CFDictionary)
+        try #require(CGImageDestinationFinalize(dest))
+        return out as Data
+    }
+
+    private func convert(_ type: UTType, ext: String, settings: OptimizeSettings) async throws -> (URL, FileJobResult, Data) {
+        let dir = tempDir()
+        let file = dir.appendingPathComponent("photo.\(ext)")
+        let original = try encoded(type)
+        try original.write(to: file)
+        let result = try await FileJob.run(file, settings: settings)
+        guard case .converted(let output) = result.outcome else {
+            Issue.record("expected a conversion, got \(result.outcome)")
+            return (file, result, original)
+        }
+        return (output, result, original)
+    }
+
+    @Test func tiffAndBMPBecomePNGWhenKeepingTheFormat() async throws {
+        for (type, ext) in [(UTType.tiff, "tiff"), (UTType.bmp, "bmp")] {
+            let (output, _, original) = try await convert(type, ext: ext, settings: .init(level: .lossless))
+            defer { try? FileManager.default.removeItem(at: output.deletingLastPathComponent()) }
+            #expect(output.pathExtension == "png")
+            #expect(ImageFormat.sniff(try Data(contentsOf: output)) == .png)
+            #expect(try Data(contentsOf: output.deletingLastPathComponent().appendingPathComponent("photo.\(ext)")) == original)
+        }
+    }
+
+    @Test func heicBecomesJPEGByDefaultAndWebPOnRequest() async throws {
+        guard let heic = try? encoded(.heic) else { return }  // this Mac cannot write HEIC; nothing to test
+        _ = heic
+        let (jpeg, _, _) = try await convert(.heic, ext: "heic", settings: .init(level: .balanced))
+        defer { try? FileManager.default.removeItem(at: jpeg.deletingLastPathComponent()) }
+        #expect(ImageFormat.sniff(try Data(contentsOf: jpeg)) == .jpeg)
+        let (webp, _, _) = try await convert(.heic, ext: "heic", settings: .init(level: .balanced, format: .webp))
+        defer { try? FileManager.default.removeItem(at: webp.deletingLastPathComponent()) }
+        #expect(ImageFormat.sniff(try Data(contentsOf: webp)) == .webp)
+    }
+
+    @Test func maxSizeAppliesToConvertedImages() async throws {
+        let (output, _, _) = try await convert(.tiff, ext: "tif", settings: .init(level: .balanced, format: .jpeg, maxSide: 60))
+        defer { try? FileManager.default.removeItem(at: output.deletingLastPathComponent()) }
+        #expect(size(of: try Data(contentsOf: output)) == (60, 40))
+    }
+
+    @Test func scannerAcceptsTheNewExtensionsInFolders() throws {
+        let dir = tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        for name in ["a.HEIC", "b.tiff", "c.bmp", "d.gif"] { try Data("x".utf8).write(to: dir.appendingPathComponent(name)) }
+        #expect(ImageFileScanner.imageURLs(from: [dir]).map(\.lastPathComponent) == ["a.HEIC", "b.tiff", "c.bmp"])
     }
 }
