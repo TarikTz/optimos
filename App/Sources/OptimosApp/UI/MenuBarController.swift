@@ -47,7 +47,16 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
-        let current = NSMenuItem(title: "Saving to: \(saveLocation.displayPath)", action: nil, keyEquivalent: "")
+        let asks = NSMenuItem(
+            title: "Ask Where to Save Each Time", action: #selector(toggleAsk), keyEquivalent: "")
+        asks.target = self
+        asks.state = saveLocation.asksWhereToSave ? .on : .off
+        menu.addItem(asks)
+        let current = NSMenuItem(
+            title: saveLocation.asksWhereToSave
+                ? "Save panel starts in: \(saveLocation.displayPath)"
+                : "Autosaving to: \(saveLocation.displayPath)",
+            action: nil, keyEquivalent: "")
         current.isEnabled = false
         menu.addItem(current)
         let choose = NSMenuItem(title: "Save Location…", action: #selector(chooseSaveLocation), keyEquivalent: "")
@@ -93,6 +102,11 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             let action = HotkeyAction(rawValue: number.uint32Value)
         else { return }
         onAction?(action)
+    }
+
+    @objc private func toggleAsk() {
+        saveLocation.setAsksWhereToSave(!saveLocation.asksWhereToSave)
+        if let menu = statusItem.menu { rebuild(menu) }
     }
 
     @objc private func chooseSaveLocation() {

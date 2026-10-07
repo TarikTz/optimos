@@ -6,6 +6,7 @@ struct SaveLocationStore: @unchecked Sendable {
     private let defaults: UserDefaults
     private static let directoryKey = "saveDirectory"
     private static let lastFileKey = "lastSavedFile"
+    private static let asksKey = "asksWhereToSave"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -24,6 +25,16 @@ struct SaveLocationStore: @unchecked Sendable {
             return Self.defaultDirectory
         }
         return URL(fileURLWithPath: path, isDirectory: true)
+    }
+
+    /// True (the default): Save opens a panel to pick the folder each time. False: Save writes
+    /// straight into `directory`.
+    var asksWhereToSave: Bool {
+        defaults.object(forKey: Self.asksKey) as? Bool ?? true
+    }
+
+    func setAsksWhereToSave(_ value: Bool) {
+        defaults.set(value, forKey: Self.asksKey)
     }
 
     func setDirectory(_ url: URL) {

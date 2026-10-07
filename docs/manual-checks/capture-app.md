@@ -87,3 +87,7 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 56. [ ] Press Copy, then paste into an app, and do the same with Save. Expected: the image contains the annotations exactly as shown, including pixelation, at full Retina sharpness.
 57. [ ] With annotations drawn, press outside the selection. Expected: nothing happens (the work is kept). With no annotations, pressing outside still starts a new selection. `Esc`, right-click and Cmd-Tab still close the overlay.
 
+## Save panel
+58. [ ] Select an area and press Save (button or `⌘S`). Expected: a save panel opens in front, pre-filled with a timestamped name; choosing a folder saves there and the toast names it. Cancelling the panel saves nothing and shows no error.
+59. [ ] Untick **Ask Where to Save Each Time** in the menu. Expected: Save now writes straight into the folder named on the "Autosaving to:" line with no panel. Tick it again and the panel returns.
+

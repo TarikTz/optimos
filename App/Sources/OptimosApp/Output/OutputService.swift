@@ -108,9 +108,11 @@ struct OutputService: Sendable {
             finalBytes: prepared.bytes.count, warning: prepared.warning)
     }
 
-    func save(_ image: CGImage) async throws -> OutputResult {
+    /// Saves into the configured folder with a timestamped name, or to `destination` when the user
+    /// picked an exact file in a save panel.
+    func save(_ image: CGImage, to destination: URL? = nil) async throws -> OutputResult {
         let prepared = try await prepare(image)
-        let url = try write(prepared.bytes)
+        let url = try destination.map { try writeExactly(prepared.bytes, to: $0) } ?? write(prepared.bytes)
         return OutputResult(
             destination: .file(url), originalBytes: prepared.originalBytes,
             finalBytes: prepared.bytes.count, warning: prepared.warning)
@@ -136,6 +138,16 @@ struct OutputService: Sendable {
     /// Only the default folder is created on demand; any other folder must already exist.
     static func requiresExistingFolder(_ directory: URL) -> Bool {
         directory.standardizedFileURL != SaveLocationStore.defaultDirectory.standardizedFileURL
+    }
+
+    /// The save panel already asked about overwriting, so this replaces the file.
+    private func writeExactly(_ bytes: Data, to url: URL) throws -> URL {
+        do {
+            try bytes.write(to: url, options: .atomic)
+            return url
+        } catch {
+            throw OutputError.cannotWrite("\(error.localizedDescription)")
+        }
     }
 
     private func write(_ bytes: Data) throws -> URL {

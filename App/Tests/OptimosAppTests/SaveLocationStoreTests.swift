@@ -49,3 +49,15 @@ import Testing
         #expect(store.displayPath.hasPrefix("~/"))
     }
 }
+
+@Suite struct AskWhereToSaveTests {
+    @Test func asksByDefaultAndRemembersTheToggle() {
+        let name = "optimos-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defer { defaults.removePersistentDomain(forName: name) }
+        let store = SaveLocationStore(defaults: defaults)
+        #expect(store.asksWhereToSave)
+        store.setAsksWhereToSave(false)
+        #expect(!store.asksWhereToSave)
+    }
+}

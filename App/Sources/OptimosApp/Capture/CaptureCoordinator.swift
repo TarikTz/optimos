@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import UniformTypeIdentifiers
 
 /// The only place the capture flow is wired together:
 /// hotkey -> permission -> freeze screens -> overlay (select, then Copy or Save) -> crop -> output -> toast.
@@ -89,14 +90,38 @@ final class CaptureCoordinator {
         try await deliver(final, save: outcome.action == .save)
     }
 
+    /// Asks where to save this screenshot, starting in the remembered folder.
+    private func chooseSaveFile() -> URL? {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = ScreenshotFilename.make(for: Date())
+        panel.message = "Choose where to save the screenshot."
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: saveLocation.directory.path, isDirectory: &isDirectory),
+            isDirectory.boolValue
+        {
+            panel.directoryURL = saveLocation.directory
+        }
+        // An accessory app is not frontmost by default, and the panel would open behind other windows.
+        NSApp.activate(ignoringOtherApps: true)
+        return panel.runModal() == .OK ? panel.url : nil
+    }
+
     private func deliver(_ image: CGImage, save: Bool) async throws {
         guard save else {
             let result = try await output.copy(image)
             toast.show(result.toastMessage, isWarning: result.warning != nil)
             return
         }
+        var destination: URL?
+        if saveLocation.asksWhereToSave {
+            guard let chosen = chooseSaveFile() else { return }  // cancelled: nothing is saved
+            destination = chosen
+            saveLocation.setDirectory(chosen.deletingLastPathComponent())
+        }
         do {
-            let result = try await output.save(image)
+            let result = try await output.save(image, to: destination)
             if case .file(let url) = result.destination { saveLocation.setLastSavedFile(url) }
             toast.show(result.toastMessage, isWarning: result.warning != nil)
         } catch OutputError.cannotWrite(let why) {

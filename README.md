@@ -39,7 +39,7 @@ Default shortcuts (rebinding comes in a later release):
 | `⌃⌥⌘4` | Capture an area, or press Space to pick a window. A toolbar then appears next to the selection: **Copy** (`Enter` or `⌘C`), **Save** (`⌘S`) or **Cancel** (`Esc`). Dragging again outside the toolbar starts a new selection. The toolbar also has annotation tools: select/move (`V`), rectangle (`R`), arrow (`A`), text (`T`) and hide-sensitive-content pixelate (`P`), with colour and size pickers, `⌘Z` / `⇧⌘Z` undo and redo, and `Delete` to remove the selected annotation. Copy and Save include the annotations. |
 | `⌃⌥⌘3` | Capture the screen under the mouse and copy it immediately |
 
-Saved screenshots go to `~/Pictures/Optimos/` by default. Choose another folder with **Save Location…** in the menu-bar menu; the menu always shows the current folder, and **Show Last Screenshot in Finder** reveals the last saved file.
+Clicking **Save** opens a save panel to pick the folder and name. Untick **Ask Where to Save Each Time** in the menu to autosave instead; the folder you last picked (or `~/Pictures/Optimos/` if none) is then used. Choose another folder with **Save Location…** in the menu-bar menu; the menu always shows the current folder, and **Show Last Screenshot in Finder** reveals the last saved file.
 
 Troubleshooting: if Screen Recording already shows OptimosApp as allowed but the app keeps asking (this
 happens after rebuilds of an ad-hoc signed build), run `tccutil reset ScreenCapture app.optimos.OptimosApp`,
