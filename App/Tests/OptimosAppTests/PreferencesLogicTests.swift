@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
@@ -101,7 +102,7 @@ private func isolatedDefaults() -> (UserDefaults, () -> Void) {
         defer { try? FileManager.default.removeItem(at: dir) }
         let board = FakePasteboard()
         let service = OutputService(
-            pasteboard: board, saveDirectory: { dir }, captureSettings: { (.webp, .balanced) })
+            pasteboard: board, saveDirectory: { dir }, captureSettings: { (.webp, .balanced, nil) })
         let saved = try await service.save(image())
         guard case .file(let url) = saved.destination else { Issue.record("no file"); return }
         #expect(url.pathExtension == "webp")
@@ -116,7 +117,7 @@ private func isolatedDefaults() -> (UserDefaults, () -> Void) {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
         let service = OutputService(
-            pasteboard: FakePasteboard(), saveDirectory: { dir }, captureSettings: { (.webp, .balanced) },
+            pasteboard: FakePasteboard(), saveDirectory: { dir }, captureSettings: { (.webp, .balanced, nil) },
             optimizer: { _, _ in throw Boom() })
         let saved = try await service.save(image())
         guard case .file(let url) = saved.destination else { Issue.record("no file"); return }
@@ -131,5 +132,46 @@ private func isolatedDefaults() -> (UserDefaults, () -> Void) {
         #expect(key?.displayString == "⌃⌘K")
         #expect(Hotkey.from(keyCode: 53, flags: [.command], characters: nil) == nil)
         #expect(Hotkey.from(keyCode: 49, flags: [.option], characters: " ")?.displayString == "⌥Space")
+    }
+}
+
+@Suite struct CaptureChoiceTests {
+    private func image() -> CGImage {
+        let ctx = CGContext(
+            data: nil, width: 400, height: 200, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.setFillColor(CGColor(red: 0.9, green: 0.3, blue: 0.2, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 400, height: 200))
+        return ctx.makeImage()!
+    }
+
+    private func width(of data: Data) -> Int {
+        let src = CGImageSourceCreateWithData(data as CFData, nil)!
+        return (CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as! [CFString: Any])[kCGImagePropertyPixelWidth] as! Int
+    }
+
+    @Test func maxSideDefaultIsRememberedAndClearable() {
+        let (defaults, cleanup) = isolatedDefaults()
+        defer { cleanup() }
+        let store = CaptureSettingsStore(defaults: defaults)
+        #expect(store.maxSide == nil)
+        store.maxSide = 1280
+        #expect(CaptureSettingsStore(defaults: defaults).maxSide == 1280)
+        store.maxSide = nil
+        #expect(CaptureSettingsStore(defaults: defaults).maxSide == nil)
+    }
+
+    @Test func thePerCaptureChoiceOverridesTheDefaultsForCopyAndShare() async throws {
+        let board = FakePasteboard()
+        let service = OutputService(pasteboard: board, captureSettings: { (.png, .lossless, nil) })
+        _ = try await service.copy(image(), choice: OutputChoice(format: .webp, maxSide: 100))
+        let copied = try #require(board.written.first)
+        #expect(ImageFormat.sniff(copied) == .png)  // the clipboard stays PNG
+        #expect(width(of: copied) == 100)           // but the size choice applies
+
+        let file = try await service.exportForSharing(image(), choice: OutputChoice(format: .webp, maxSide: 200))
+        defer { OutputService.clearShareDirectory() }
+        #expect(file.pathExtension == "webp")
+        #expect(width(of: try Data(contentsOf: file)) == 200)
     }
 }

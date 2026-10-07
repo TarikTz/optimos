@@ -11,6 +11,7 @@ final class PreferencesModel {
     var optimizer: OptimizeSettings { didSet { optimizerStore.settings = optimizer } }
     var captureFormat: ImageFormat { didSet { captureStore.format = captureFormat } }
     var captureLevel: OptimizeLevel { didSet { captureStore.level = captureLevel } }
+    var captureMaxSide: Int? { didSet { captureStore.maxSide = captureMaxSide } }
     private(set) var hotkeys: [HotkeyAction: Hotkey]
     private(set) var hotkeyErrors: [HotkeyAction: String] = [:]
     private(set) var launchAtLogin: Bool
@@ -38,6 +39,7 @@ final class PreferencesModel {
         optimizer = optimizerStore.settings
         captureFormat = captureStore.format
         captureLevel = captureStore.level
+        captureMaxSide = captureStore.maxSide
         hotkeys = hotkeyStore.table
         launchAtLogin = LaunchAtLogin.isEnabled
     }

@@ -23,13 +23,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return }
 
         NSApp.setActivationPolicy(.accessory)
+        OutputService.clearShareDirectory()
         let permission = PermissionService()
         let saveLocation = SaveLocationStore()
         let captureSettings = CaptureSettingsStore()
         let coordinator = CaptureCoordinator(
             capture: ScreenCaptureKitService(), output: OutputService(
                 saveDirectory: { saveLocation.directory },
-                captureSettings: { (captureSettings.format, captureSettings.level) }),
+                captureSettings: { (captureSettings.format, captureSettings.level, captureSettings.maxSide) }),
             permission: permission, toast: ToastPresenter(), overlay: SelectionOverlayController(),
             saveLocation: saveLocation, captureSettings: captureSettings)
         let hotkeyStore = HotkeyStore()

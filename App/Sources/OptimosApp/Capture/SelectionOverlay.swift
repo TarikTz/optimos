@@ -61,6 +61,9 @@ final class SelectionView: NSView {
     /// The selection fixed on release; while set, the toolbar is showing and Copy/Save/Cancel apply to it.
     private var confirmedRect: CGRect?
     private var toolbar: OverlayToolbar?
+    /// The toolbar's output choices for the current capture; they start from the saved defaults every time.
+    private let outputDefaults: OutputChoice
+    private var output: OutputChoice
 
     // Annotation state for the confirmed selection.
     private var document = AnnotationDocument()
@@ -75,8 +78,10 @@ final class SelectionView: NSView {
     /// Text being typed inline; it becomes an annotation when finished.
     private var textDraft: (origin: CGPoint, string: String)?
 
-    init(display: FrozenDisplay, windows: [WindowInfo]) {
+    init(display: FrozenDisplay, windows: [WindowInfo], outputDefaults: OutputChoice) {
         self.display = display
+        self.outputDefaults = outputDefaults
+        self.output = outputDefaults
         self.windows = windows
         self.background = NSImage(cgImage: display.image, size: display.info.frame.size)
         super.init(frame: NSRect(origin: .zero, size: display.info.frame.size))
@@ -178,7 +183,11 @@ final class SelectionView: NSView {
         confirmedRect = rect
         document = AnnotationDocument()
         tool = .select
-        let bar = OverlayToolbar(tool: tool, color: color, size: size)
+        output = outputDefaults
+        let bar = OverlayToolbar(tool: tool, color: color, size: size, output: output)
+        bar.onFormat = { [weak self] in self?.output.format = $0 }
+        bar.onMaxSide = { [weak self] in self?.output.maxSide = $0 }
+        bar.onShare = { [weak self] in self?.finish(with: .share) }
         bar.onTool = { [weak self] in self?.setTool($0) }
         bar.onColor = { [weak self] in self?.setColor($0) }
         bar.onSize = { [weak self] in self?.setSize($0) }
@@ -215,7 +224,7 @@ final class SelectionView: NSView {
         commitText()
         onFinish?(OverlayOutcome(
             selection: CaptureSelection(displayID: display.info.id, rect: rect), action: action,
-            annotations: document.annotations))
+            annotations: document.annotations, output: output, toolbarFrame: toolbar?.frame ?? .zero))
     }
 
     // MARK: Annotations
@@ -500,11 +509,11 @@ final class SelectionOverlayController {
 
     var isActive: Bool { continuation != nil }
 
-    func run(displays: [FrozenDisplay], windows: [WindowInfo]) async -> OverlayOutcome? {
+    func run(displays: [FrozenDisplay], windows: [WindowInfo], outputDefaults: OutputChoice) async -> OverlayOutcome? {
         guard continuation == nil else { return nil }
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
-            present(displays: displays, windows: windows)
+            present(displays: displays, windows: windows, outputDefaults: outputDefaults)
         }
     }
 
@@ -512,11 +521,11 @@ final class SelectionOverlayController {
         finish(nil)
     }
 
-    private func present(displays: [FrozenDisplay], windows: [WindowInfo]) {
+    private func present(displays: [FrozenDisplay], windows: [WindowInfo], outputDefaults: OutputChoice) {
         mode = .area
         for display in displays {
             guard let screen = NSScreen.screens.first(where: { $0.displayID == display.info.id }) else { continue }
-            let view = SelectionView(display: display, windows: windows)
+            let view = SelectionView(display: display, windows: windows, outputDefaults: outputDefaults)
             view.onFinish = { [weak self] outcome in self?.finish(outcome) }
             view.onToggleMode = { [weak self] in self?.toggleMode() }
             view.onConfirm = { [weak self, weak view] in self?.selectionConfirmed(on: view) }

@@ -1,4 +1,5 @@
 import AppKit
+import OptimosCore
 
 /// The bar shown next to a confirmed selection: annotation tools, colour and size pickers, then
 /// Copy / Save / Cancel.
@@ -12,16 +13,18 @@ final class OverlayToolbar: NSVisualEffectView {
     private static let swatchCount = 6
     private static let sizeCount = 3
     private static let actionCount = 3
-    private static let separators = 3
+    private static let separators = 2
+    private static let rowHeight: CGFloat = 36
 
-    /// Derived from the same constants that lay the bar out, so placement always knows the real size.
+    /// Two rows: annotation controls on top, output controls below. The width comes from the same
+    /// constants that lay the top row out, so placement always knows the real size.
     static let size: CGSize = {
-        let buttons = CGFloat(toolCount + sizeCount + actionCount) * button
+        let buttons = CGFloat(toolCount + sizeCount) * button
         let swatches = CGFloat(swatchCount) * swatch
-        let elements = toolCount + swatchCount + sizeCount + actionCount + separators
+        let elements = toolCount + swatchCount + sizeCount + separators
         return CGSize(
             width: buttons + swatches + CGFloat(separators) + CGFloat(elements - 1) * spacing + 2 * inset,
-            height: 36)
+            height: rowHeight * 2)
     }()
 
     var onCopy: (() -> Void)?
@@ -30,15 +33,25 @@ final class OverlayToolbar: NSVisualEffectView {
     var onTool: ((AnnotationTool) -> Void)?
     var onColor: ((AnnotationColor) -> Void)?
     var onSize: ((AnnotationSize) -> Void)?
+    var onShare: (() -> Void)?
+    var onFormat: ((ImageFormat) -> Void)?
+    var onMaxSide: ((Int?) -> Void)?
 
     private var toolButtons: [AnnotationTool: NSButton] = [:]
     private var colorButtons: [AnnotationColor: NSButton] = [:]
     private var sizeButtons: [AnnotationSize: NSButton] = [:]
+    private let formatPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let sizePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private static let maxSides: [Int?] = [nil, 3840, 2560, 1920, 1280, 800]
+    private static let formats: [ImageFormat] = [.png, .jpeg, .webp]
     private var tool: AnnotationTool
     private var color: AnnotationColor
     private var size: AnnotationSize
 
-    init(tool: AnnotationTool = .select, color: AnnotationColor = .red, size: AnnotationSize = .medium) {
+    init(
+        tool: AnnotationTool = .select, color: AnnotationColor = .red, size: AnnotationSize = .medium,
+        output: OutputChoice = OutputChoice(format: .png, maxSide: nil)
+    ) {
         self.tool = tool
         self.color = color
         self.size = size
@@ -82,27 +95,63 @@ final class OverlayToolbar: NSVisualEffectView {
             sizeButtons[size] = button
             views.append(button)
         }
-        views.append(makeSeparator())
+        let top = NSStackView(views: views)
+        top.orientation = .horizontal
+        top.distribution = .fill
+        top.alignment = .centerY
+        top.spacing = Self.spacing
+
+        // Output row: format and max size on the left, Share / Copy / Save / Cancel on the right.
+        for format in Self.formats { formatPopup.addItem(withTitle: format == .jpeg ? "JPEG" : format.rawValue.uppercased()) }
+        formatPopup.selectItem(at: Self.formats.firstIndex(of: output.format) ?? 0)
+        formatPopup.target = self
+        formatPopup.action = #selector(didPickFormat)
+        for side in Self.maxSides { sizePopup.addItem(withTitle: side.map { "Fit \($0) px" } ?? "Original size") }
+        sizePopup.selectItem(at: Self.maxSides.firstIndex(where: { $0 == output.maxSide }) ?? 0)
+        sizePopup.target = self
+        sizePopup.action = #selector(didPickSize)
+        for popup in [formatPopup, sizePopup] {
+            popup.controlSize = .small
+            popup.refusesFirstResponder = true  // keep keyboard focus on the overlay view
+            popup.appearance = NSAppearance(named: .darkAqua)
+        }
+        var bottomViews: [NSView] = [formatPopup, sizePopup]
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        bottomViews.append(spacer)
         for (symbol, tip, action) in [
+            ("square.and.arrow.up", "Share…", #selector(didTapShare)),
             ("doc.on.clipboard", "Copy (Enter)", #selector(didTapCopy)),
             ("square.and.arrow.down", "Save (⌘S)", #selector(didTapSave)),
             ("xmark", "Cancel (Esc)", #selector(didTapCancel)),
         ] as [(String, String, Selector)] {
-            views.append(
+            bottomViews.append(
                 makeButton(
                     image: NSImage(systemSymbolName: symbol, accessibilityDescription: tip) ?? NSImage(), tip: tip,
                     side: Self.button, action: action))
         }
+        let bottom = NSStackView(views: bottomViews)
+        bottom.orientation = .horizontal
+        bottom.distribution = .fill
+        bottom.alignment = .centerY
+        bottom.spacing = Self.spacing
 
-        let stack = NSStackView(views: views)
-        stack.orientation = .horizontal
-        stack.distribution = .fill
-        stack.alignment = .centerY
-        stack.spacing = Self.spacing
-        stack.edgeInsets = NSEdgeInsets(top: 4, left: Self.inset, bottom: 4, right: Self.inset)
-        stack.frame = bounds
-        stack.autoresizingMask = [.width, .height]
-        addSubview(stack)
+        let divider = NSView()
+        divider.wantsLayer = true
+        divider.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.2).cgColor
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        divider.heightAnchor.constraint(equalToConstant: 1).isActive = true
+
+        let rows = NSStackView(views: [top, divider, bottom])
+        rows.orientation = .vertical
+        rows.distribution = .fill
+        rows.alignment = .leading
+        rows.spacing = 5
+        rows.edgeInsets = NSEdgeInsets(top: 6, left: Self.inset, bottom: 6, right: Self.inset)
+        rows.frame = bounds
+        rows.autoresizingMask = [.width, .height]
+        for row in [top, divider, bottom] { row.widthAnchor.constraint(equalTo: rows.widthAnchor, constant: -2 * Self.inset).isActive = true }
+        addSubview(rows)
         refresh()
     }
 
@@ -116,6 +165,14 @@ final class OverlayToolbar: NSVisualEffectView {
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: .arrow)
+    }
+
+    func setFormat(_ format: ImageFormat) {
+        formatPopup.selectItem(at: Self.formats.firstIndex(of: format) ?? 0)
+    }
+
+    func setMaxSide(_ side: Int?) {
+        sizePopup.selectItem(at: Self.maxSides.firstIndex(where: { $0 == side }) ?? 0)
     }
 
     func setTool(_ tool: AnnotationTool) {
@@ -204,6 +261,9 @@ final class OverlayToolbar: NSVisualEffectView {
     @objc private func didTapTool(_ sender: NSButton) { onTool?(AnnotationTool.allCases[sender.tag]) }
     @objc private func didTapColor(_ sender: NSButton) { onColor?(AnnotationColor.allCases[sender.tag]) }
     @objc private func didTapSize(_ sender: NSButton) { onSize?(AnnotationSize.allCases[sender.tag]) }
+    @objc private func didTapShare() { onShare?() }
+    @objc private func didPickFormat() { onFormat?(Self.formats[max(0, formatPopup.indexOfSelectedItem)]) }
+    @objc private func didPickSize() { onMaxSide?(Self.maxSides[max(0, sizePopup.indexOfSelectedItem)]) }
     @objc private func didTapCopy() { onCopy?() }
     @objc private func didTapSave() { onSave?() }
     @objc private func didTapCancel() { onCancel?() }

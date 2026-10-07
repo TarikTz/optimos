@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import OptimosCore
 import UniformTypeIdentifiers
 
 /// The only place the capture flow is wired together:
@@ -13,6 +14,7 @@ final class CaptureCoordinator {
     private let overlay: SelectionOverlayController
     private let saveLocation: SaveLocationStore
     private let captureSettings: CaptureSettingsStore
+    private let sharePresenter = SharePresenter()
     private var isBusy = false
 
     init(
@@ -66,14 +68,17 @@ final class CaptureCoordinator {
             throw CaptureError.noDisplays
         }
         let frozen = try await capture.captureDisplay(id: id)
-        try await deliver(frozen.image, save: false)
+        let result = try await output.copy(frozen.image)
+        toast.show(result.toastMessage, isWarning: result.warning != nil)
     }
 
     private func captureArea() async throws {
         // Freeze the screens BEFORE any overlay exists, so the overlay can never be captured.
         async let windows: [WindowInfo] = (try? await capture.onScreenWindows()) ?? []
         let frozen = try await capture.captureAllDisplays()
-        let outcome = await overlay.run(displays: frozen, windows: await windows)
+        let outcome = await overlay.run(
+            displays: frozen, windows: await windows,
+            outputDefaults: OutputChoice(format: captureSettings.format, maxSide: captureSettings.maxSide))
         guard let outcome,
             let display = frozen.first(where: { $0.info.id == outcome.selection.displayID })
         else {
@@ -91,13 +96,12 @@ final class CaptureCoordinator {
                 cropped: cropped, annotations: outcome.annotations,
                 cropOrigin: CGPoint(x: cropRect.minX / scale, y: cropRect.minY / scale), pointScale: scale)
         else { throw CaptureError.annotationFailed }
-        try await deliver(final, save: outcome.action == .save)
+        try await deliver(final, outcome: outcome, display: display)
     }
 
     /// Asks where to save this screenshot, starting in the remembered folder.
-    private func chooseSaveFile() -> URL? {
+    private func chooseSaveFile(format: ImageFormat) -> URL? {
         let panel = NSSavePanel()
-        let format = captureSettings.format
         panel.allowedContentTypes = [format == .png ? .png : format == .jpeg ? .jpeg : .webP]
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = ScreenshotFilename.make(for: Date(), fileExtension: format.fileExtension)
@@ -113,20 +117,38 @@ final class CaptureCoordinator {
         return panel.runModal() == .OK ? panel.url : nil
     }
 
-    private func deliver(_ image: CGImage, save: Bool) async throws {
-        guard save else {
-            let result = try await output.copy(image)
+    private func deliver(_ image: CGImage, outcome: OverlayOutcome, display: FrozenDisplay) async throws {
+        switch outcome.action {
+        case .copy:
+            let result = try await output.copy(image, choice: outcome.output)
             toast.show(result.toastMessage, isWarning: result.warning != nil)
-            return
+        case .save:
+            try await save(image, choice: outcome.output)
+        case .share:
+            let file = try await output.exportForSharing(image, choice: outcome.output)
+            sharePresenter.share(file, near: Self.screenRect(of: outcome.toolbarFrame, on: display.info.id))
         }
+    }
+
+    /// Display-local top-left points to AppKit screen coordinates.
+    private static func screenRect(of local: CGRect, on displayID: CGDirectDisplayID) -> CGRect {
+        guard let screen = NSScreen.screens.first(where: { $0.displayID == displayID }) else {
+            return CGRect(origin: NSEvent.mouseLocation, size: .zero)
+        }
+        return CGRect(
+            x: screen.frame.minX + local.minX, y: screen.frame.maxY - local.maxY,
+            width: local.width, height: local.height)
+    }
+
+    private func save(_ image: CGImage, choice: OutputChoice) async throws {
         var destination: URL?
         if saveLocation.asksWhereToSave {
-            guard let chosen = chooseSaveFile() else { return }  // cancelled: nothing is saved
+            guard let chosen = chooseSaveFile(format: choice.format) else { return }  // cancelled: nothing is saved
             destination = chosen
             saveLocation.setDirectory(chosen.deletingLastPathComponent())
         }
         do {
-            let result = try await output.save(image, to: destination)
+            let result = try await output.save(image, to: destination, choice: choice)
             if case .file(let url) = result.destination { saveLocation.setLastSavedFile(url) }
             toast.show(result.toastMessage, isWarning: result.warning != nil)
         } catch OutputError.cannotWrite(let why) {

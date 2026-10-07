@@ -119,7 +119,11 @@ struct PreferencesView: View {
                 Text("Balanced").tag(OptimizeLevel.balanced)
                 Text("Smallest").tag(OptimizeLevel.smallest)
             }
-            Text("Copy to the clipboard is always PNG, because every app accepts it. The level applies to both Copy and Save.")
+            Picker("Max size", selection: $model.captureMaxSide) {
+                Text("Original size").tag(Int?.none)
+                ForEach(Self.sizes, id: \.self) { Text("Fit \($0) px").tag(Int?.some($0)) }
+            }
+            Text("The capture toolbar starts from these and lets you change them for one capture. Copy to the clipboard is always PNG, because every app accepts it. The level and max size apply to Copy, Save and Share.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .formStyle(.grouped)

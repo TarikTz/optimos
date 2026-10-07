@@ -79,14 +79,14 @@ struct OutputService: Sendable {
     /// Read at save time, so a folder chosen in the menu takes effect immediately.
     var saveDirectory: @Sendable () -> URL
     /// Read at save time: the capture format (Save only; Copy is always PNG) and level.
-    var captureSettings: @Sendable () -> (format: ImageFormat, level: OptimizeLevel)
+    var captureSettings: @Sendable () -> (format: ImageFormat, level: OptimizeLevel, maxSide: Int?)
     var optimizer: Optimizer
     var now: @Sendable () -> Date
 
     init(
         pasteboard: any Pasteboard = SystemPasteboard(),
         saveDirectory: @escaping @Sendable () -> URL = { SaveLocationStore.defaultDirectory },
-        captureSettings: @escaping @Sendable () -> (format: ImageFormat, level: OptimizeLevel) = { (.png, .lossless) },
+        captureSettings: @escaping @Sendable () -> (format: ImageFormat, level: OptimizeLevel, maxSide: Int?) = { (.png, .lossless, nil) },
         optimizer: @escaping Optimizer = OutputService.screenshotOptimizer,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
@@ -102,8 +102,10 @@ struct OutputService: Sendable {
         try await settings.process(data).bytes
     }
 
-    func copy(_ image: CGImage) async throws -> OutputResult {
-        let prepared = try await prepare(image, format: .png)
+    /// - Parameter choice: this capture's max size (its format is ignored: the clipboard is always PNG).
+    ///   nil uses the saved capture defaults.
+    func copy(_ image: CGImage, choice: OutputChoice? = nil) async throws -> OutputResult {
+        let prepared = try await prepare(image, format: .png, maxSide: choice.map(\.maxSide) ?? captureSettings().maxSide)
         pasteboard.writePNG(prepared.bytes)
         return OutputResult(
             destination: .clipboard, originalBytes: prepared.originalBytes,
@@ -112,9 +114,9 @@ struct OutputService: Sendable {
 
     /// Saves into the configured folder with a timestamped name, or to `destination` when the user
     /// picked an exact file in a save panel.
-    func save(_ image: CGImage, to destination: URL? = nil) async throws -> OutputResult {
-        let format = captureSettings().format
-        let prepared = try await prepare(image, format: format)
+    func save(_ image: CGImage, to destination: URL? = nil, choice: OutputChoice? = nil) async throws -> OutputResult {
+        let format = choice?.format ?? captureSettings().format
+        let prepared = try await prepare(image, format: format, maxSide: choice.map(\.maxSide) ?? captureSettings().maxSide)
         // If optimizing failed the bytes are a plain PNG, so the file must say .png whatever was chosen.
         let actual: ImageFormat = prepared.isPlainPNG ? .png : format
         let fixedDestination = destination.map {
@@ -128,6 +130,31 @@ struct OutputService: Sendable {
             finalBytes: prepared.bytes.count, warning: prepared.warning)
     }
 
+    /// Writes the finished image to a temporary file for the share sheet and returns its URL.
+    func exportForSharing(_ image: CGImage, choice: OutputChoice) async throws -> URL {
+        let prepared = try await prepare(image, format: choice.format, maxSide: choice.maxSide)
+        let format: ImageFormat = prepared.isPlainPNG ? .png : choice.format
+        let directory = Self.shareDirectory
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let url = directory.appendingPathComponent(
+                ScreenshotFilename.make(for: now(), fileExtension: format.fileExtension))
+            try prepared.bytes.write(to: url, options: .atomic)
+            return url
+        } catch {
+            throw OutputError.cannotWrite("\(error.localizedDescription)")
+        }
+    }
+
+    static var shareDirectory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("OptimosShare", isDirectory: true)
+    }
+
+    /// Temporary share files are removed at launch.
+    static func clearShareDirectory() {
+        try? FileManager.default.removeItem(at: shareDirectory)
+    }
+
     private struct Prepared {
         let bytes: Data
         let originalBytes: Int
@@ -137,10 +164,10 @@ struct OutputService: Sendable {
 
     /// Encodes to PNG and optimizes. If optimization fails the plain PNG is used and a warning is
     /// reported, so a screenshot is never lost and the problem is never silent.
-    private func prepare(_ image: CGImage, format: ImageFormat) async throws -> Prepared {
+    private func prepare(_ image: CGImage, format: ImageFormat, maxSide: Int?) async throws -> Prepared {
         let png = try PNGEncoder.data(from: image)
         do {
-            let settings = OptimizeSettings(level: captureSettings().level, format: format)
+            let settings = OptimizeSettings(level: captureSettings().level, format: format, maxSide: maxSide)
             return Prepared(bytes: try await optimizer(png, settings), originalBytes: png.count, warning: nil)
         } catch {
             // The plain PNG is always usable; Save then writes it as a .png whatever the format setting.
