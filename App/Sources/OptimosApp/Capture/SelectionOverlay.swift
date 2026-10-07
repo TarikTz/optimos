@@ -75,6 +75,14 @@ final class SelectionView: NSView {
     private var draftShape: Annotation?
     /// The last point of the current move drag.
     private var moveLast: CGPoint?
+    /// A drag of the selection itself: a handle (resize) or its inside (move).
+    private enum SelectionDrag {
+        case resize(ResizeHandle)
+        case move(grabOffset: CGSize)
+    }
+    private var selectionDrag: SelectionDrag?
+    /// A drag of one handle of the selected annotation.
+    private var annotationHandleDrag: ResizeHandle?
     /// Text being typed inline; it becomes an annotation when finished.
     private var textDraft: (origin: CGPoint, string: String)?
 
@@ -137,7 +145,7 @@ final class SelectionView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        if let rect = confirmedRect, drawStart != nil || moveLast != nil {
+        if let rect = confirmedRect, drawStart != nil || moveLast != nil || selectionDrag != nil || annotationHandleDrag != nil {
             dragAnnotation(to: convert(event.locationInWindow, from: nil), in: rect)
             return
         }
@@ -154,7 +162,7 @@ final class SelectionView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        if drawStart != nil || moveLast != nil {
+        if drawStart != nil || moveLast != nil || selectionDrag != nil || annotationHandleDrag != nil {
             finishAnnotationDrag()
             return
         }
@@ -212,6 +220,8 @@ final class SelectionView: NSView {
         drawStart = nil
         draftShape = nil
         moveLast = nil
+        selectionDrag = nil
+        annotationHandleDrag = nil
         textDraft = nil
         toolbar?.removeFromSuperview()
         toolbar = nil
@@ -233,6 +243,18 @@ final class SelectionView: NSView {
     /// start a new selection (only when no annotation work would be lost).
     private func handleAnnotationPress(at point: CGPoint, in rect: CGRect) -> Bool {
         commitText()
+        // Handles come first: the selected annotation's (Select tool), then the selection's own.
+        if tool == .select, let selected = document.selected,
+            let handle = HandleGeometry.handle(at: point, in: selected.handlePositions)
+        {
+            document.beginMove()
+            annotationHandleDrag = handle
+            return true
+        }
+        if let handle = HandleGeometry.handle(at: point, in: HandleGeometry.positions(for: rect)) {
+            selectionDrag = .resize(handle)
+            return true
+        }
         guard rect.contains(point) else { return !document.isEmpty }
         switch tool {
         case .select:
@@ -240,10 +262,10 @@ final class SelectionView: NSView {
                 document.select(hit.id)
                 document.beginMove()
                 moveLast = point
-            } else if document.isEmpty {
-                return false
             } else {
+                // Empty space inside the selection: a click deselects, a drag moves the selection.
                 document.select(nil)
+                selectionDrag = .move(grabOffset: CGSize(width: point.x - rect.minX, height: point.y - rect.minY))
             }
         case .rectangle, .arrow, .pixelate:
             document.select(nil)
@@ -269,7 +291,20 @@ final class SelectionView: NSView {
     }
 
     private func dragAnnotation(to point: CGPoint, in rect: CGRect) {
-        if let last = moveLast {
+        if let drag = selectionDrag {
+            switch drag {
+            case .resize(let handle):
+                confirmedRect = HandleGeometry.resized(rect, dragging: handle, to: point, minSize: 4, within: bounds)
+            case .move(let offset):
+                let x = min(max(point.x - offset.width, bounds.minX), bounds.maxX - rect.width)
+                let y = min(max(point.y - offset.height, bounds.minY), bounds.maxY - rect.height)
+                confirmedRect = CGRect(x: x, y: y, width: rect.width, height: rect.height)
+            }
+            toolbar?.frame = ToolbarPlacement.frame(
+                for: confirmedRect ?? rect, toolbarSize: OverlayToolbar.size, displaySize: bounds.size)
+        } else if let handle = annotationHandleDrag {
+            document.resizeSelected(handle, to: point, within: rect)
+        } else if let last = moveLast {
             document.moveSelected(by: CGSize(width: point.x - last.x, height: point.y - last.y))
             moveLast = point
         } else if let start = drawStart {
@@ -285,6 +320,8 @@ final class SelectionView: NSView {
             drawStart = nil
             draftShape = nil
             moveLast = nil
+            selectionDrag = nil
+            annotationHandleDrag = nil
             pressMode = nil
             needsDisplay = true
         }
@@ -452,6 +489,7 @@ final class SelectionView: NSView {
         (mode == .window ? NSColor.controlAccentColor : NSColor.white).setStroke()
         border.stroke()
         drawSizeLabel(for: highlight)
+        if confirmedRect != nil, let ctx = NSGraphicsContext.current?.cgContext { drawHandles(in: ctx, rect: highlight) }
     }
 
     private func drawAnnotations() {
@@ -473,6 +511,22 @@ final class SelectionView: NSView {
             ctx.stroke(selected.bounds.insetBy(dx: -4, dy: -4))
         }
         ctx.restoreGState()
+    }
+
+    /// Small squares on the selection's border (always) and on the selected annotation (Select tool).
+    private func drawHandles(in ctx: CGContext, rect: CGRect) {
+        func square(at point: CGPoint, fill: NSColor, size: CGFloat) {
+            let r = CGRect(x: point.x - size / 2, y: point.y - size / 2, width: size, height: size)
+            ctx.setFillColor(fill.cgColor)
+            ctx.fill(r)
+            ctx.setStrokeColor(NSColor.black.withAlphaComponent(0.55).cgColor)
+            ctx.setLineWidth(1)
+            ctx.stroke(r)
+        }
+        if tool == .select, let selected = document.selected {
+            for (_, point) in selected.handlePositions { square(at: point, fill: .controlAccentColor, size: 8) }
+        }
+        for (_, point) in HandleGeometry.positions(for: rect) { square(at: point, fill: .white, size: 8) }
     }
 
     private func drawSizeLabel(for rect: CGRect) {

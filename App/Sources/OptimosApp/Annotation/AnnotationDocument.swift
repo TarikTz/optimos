@@ -58,6 +58,18 @@ struct AnnotationDocument {
         annotations[index] = annotations[index].translated(by: delta)
     }
 
+    /// Drags a handle of the selected annotation. Call `beginMove()` first; a whole drag is one undo step.
+    mutating func resizeSelected(_ handle: ResizeHandle, to point: CGPoint, within bounds: CGRect) {
+        guard let index = selectedIndex else { return }
+        let resized = annotations[index].resized(dragging: handle, to: point, within: bounds)
+        guard resized != annotations[index] else { return }
+        if !moveStepOpen {
+            checkpoint()
+            moveStepOpen = true
+        }
+        annotations[index] = resized
+    }
+
     mutating func undo() {
         guard let previous = undoStack.popLast() else { return }
         redoStack.append(annotations)
