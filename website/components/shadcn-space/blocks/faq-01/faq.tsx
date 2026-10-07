@@ -37,7 +37,7 @@ export const FAQ_DATA = [
   {
     question: "Which formats does it support?",
     answer:
-      "PNG, JPEG and WebP for optimizing and converting. More formats such as HEIC are planned.",
+      "PNG, JPEG and WebP can be optimized and converted in any direction. HEIC (iPhone photos), TIFF and BMP can be opened and converted to PNG, JPEG or WebP; those originals are never replaced.",
   },
 ];
 
