@@ -5,7 +5,7 @@ enum AnnotationHitTesting {
     /// are always rendered below them; among equals the most recently added wins.
     static func annotation(at point: CGPoint, in annotations: [Annotation]) -> Annotation? {
         let ordered = annotations.reversed()
-        return ordered.first { !$0.isPixelate && hits($0, point) } ?? ordered.first { $0.isPixelate && hits($0, point) }
+        return ordered.first { !$0.isRedaction && hits($0, point) } ?? ordered.first { $0.isRedaction && hits($0, point) }
     }
 
     static func hits(_ annotation: Annotation, _ point: CGPoint) -> Bool {
@@ -14,11 +14,24 @@ enum AnnotationHitTesting {
         case .rectangle(let rect):
             return rect.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
                 && !rect.insetBy(dx: tolerance, dy: tolerance).contains(point)
-        case .arrow(let from, let to):
+        case .ellipse(let rect):
+            return inside(point, ellipseIn: rect.insetBy(dx: -tolerance, dy: -tolerance))
+                && !inside(point, ellipseIn: rect.insetBy(dx: tolerance, dy: tolerance))
+        case .arrow(let from, let to), .line(let from, let to):
             return distance(from: point, toSegment: from, to) <= tolerance
-        case .text, .pixelate:
+        case .marker(let center, _):
+            return hypot(point.x - center.x, point.y - center.y) <= annotation.size.markerDiameter / 2 + 2
+        case .text, .highlight, .pixelate, .blur:
             return annotation.bounds.contains(point)
         }
+    }
+
+    /// True if `point` is inside the ellipse inscribed in `rect` (false for a degenerate rect).
+    static func inside(_ point: CGPoint, ellipseIn rect: CGRect) -> Bool {
+        guard rect.width > 0, rect.height > 0 else { return false }
+        let dx = (point.x - rect.midX) / (rect.width / 2)
+        let dy = (point.y - rect.midY) / (rect.height / 2)
+        return dx * dx + dy * dy <= 1
     }
 
     static func distance(from p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> CGFloat {

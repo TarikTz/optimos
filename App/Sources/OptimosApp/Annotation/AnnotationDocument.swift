@@ -15,6 +15,14 @@ struct AnnotationDocument {
     var canRedo: Bool { !redoStack.isEmpty }
     var selected: Annotation? { annotations.first { $0.id == selectedID } }
 
+    /// The number the next marker gets: one more than the highest on the screenshot.
+    var nextMarkerNumber: Int {
+        (annotations.compactMap { annotation -> Int? in
+            if case .marker(_, let number) = annotation.kind { return number }
+            return nil
+        }.max() ?? 0) + 1
+    }
+
     mutating func select(_ id: UUID?) {
         selectedID = id.flatMap { id in annotations.contains { $0.id == id } ? id : nil }
     }

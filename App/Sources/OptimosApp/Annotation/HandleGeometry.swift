@@ -56,9 +56,10 @@ extension Annotation {
     /// Handles to show for this annotation (none for text, which only moves).
     var handlePositions: [(handle: ResizeHandle, point: CGPoint)] {
         switch kind {
-        case .rectangle(let rect), .pixelate(let rect): HandleGeometry.positions(for: rect)
-        case .arrow(let from, let to): [(.arrowStart, from), (.arrowEnd, to)]
-        case .text: []
+        case .rectangle(let rect), .ellipse(let rect), .highlight(let rect), .pixelate(let rect), .blur(let rect):
+            HandleGeometry.positions(for: rect)
+        case .arrow(let from, let to), .line(let from, let to): [(.arrowStart, from), (.arrowEnd, to)]
+        case .text, .marker: []
         }
     }
 
@@ -68,8 +69,14 @@ extension Annotation {
         switch kind {
         case .rectangle(let rect):
             copy.kind = .rectangle(HandleGeometry.resized(rect, dragging: handle, to: point, minSize: 4, within: bounds))
+        case .ellipse(let rect):
+            copy.kind = .ellipse(HandleGeometry.resized(rect, dragging: handle, to: point, minSize: 4, within: bounds))
+        case .highlight(let rect):
+            copy.kind = .highlight(HandleGeometry.resized(rect, dragging: handle, to: point, minSize: 4, within: bounds))
         case .pixelate(let rect):
             copy.kind = .pixelate(HandleGeometry.resized(rect, dragging: handle, to: point, minSize: 4, within: bounds))
+        case .blur(let rect):
+            copy.kind = .blur(HandleGeometry.resized(rect, dragging: handle, to: point, minSize: 4, within: bounds))
         case .arrow(let from, let to):
             let p = CGPoint(
                 x: min(max(point.x, bounds.minX), bounds.maxX), y: min(max(point.y, bounds.minY), bounds.maxY))
@@ -78,7 +85,15 @@ extension Annotation {
             case .arrowEnd: copy.kind = .arrow(from: from, to: p)
             default: break
             }
-        case .text:
+        case .line(let from, let to):
+            let p = CGPoint(
+                x: min(max(point.x, bounds.minX), bounds.maxX), y: min(max(point.y, bounds.minY), bounds.maxY))
+            switch handle {
+            case .arrowStart: copy.kind = .line(from: p, to: to)
+            case .arrowEnd: copy.kind = .line(from: from, to: p)
+            default: break
+            }
+        case .text, .marker:
             break
         }
         return copy

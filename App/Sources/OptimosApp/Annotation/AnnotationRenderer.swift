@@ -16,13 +16,18 @@ enum AnnotationRenderer {
         _ annotations: [Annotation], in ctx: CGContext, source: CGImage, sourceOrigin: CGPoint = .zero,
         pointScale: CGFloat
     ) {
-        // Pixelate always sits below the other annotations so a shape drawn over it stays visible.
-        for annotation in annotations where annotation.isPixelate {
-            if case .pixelate(let rect) = annotation.kind {
-                pixelate(rect, in: ctx, source: source, sourceOrigin: sourceOrigin, pointScale: pointScale)
+        // Pixelate and blur always sit below the other annotations so a shape drawn over them stays visible.
+        for annotation in annotations where annotation.isRedaction {
+            switch annotation.kind {
+            case .pixelate(let rect):
+                hide(rect, in: ctx, source: source, sourceOrigin: sourceOrigin, pointScale: pointScale, smooth: false)
+            case .blur(let rect):
+                hide(rect, in: ctx, source: source, sourceOrigin: sourceOrigin, pointScale: pointScale, smooth: true)
+            default:
+                break
             }
         }
-        for annotation in annotations where !annotation.isPixelate {
+        for annotation in annotations where !annotation.isRedaction {
             draw(annotation, in: ctx)
         }
     }
@@ -38,6 +43,17 @@ enum AnnotationRenderer {
         switch annotation.kind {
         case .rectangle(let rect):
             ctx.stroke(rect)
+        case .ellipse(let rect):
+            ctx.strokeEllipse(in: rect)
+        case .line(let from, let to):
+            ctx.move(to: from)
+            ctx.addLine(to: to)
+            ctx.strokePath()
+        case .highlight(let rect):
+            ctx.setFillColor(annotation.color.cgColor.copy(alpha: 0.4) ?? annotation.color.cgColor)
+            ctx.fill(rect)
+        case .marker(let center, let number):
+            drawMarker(number, at: center, size: annotation.size, color: annotation.color, in: ctx)
         case .arrow(let from, let to):
             for (a, b) in arrowSegments(from: from, to: to, lineWidth: annotation.size.lineWidth) {
                 ctx.move(to: a)
@@ -46,9 +62,29 @@ enum AnnotationRenderer {
             ctx.strokePath()
         case .text(let origin, let string):
             drawText(string, at: origin, size: annotation.size, color: annotation.color, in: ctx)
-        case .pixelate:
+        case .pixelate, .blur:
             break
         }
+    }
+
+    private static func drawMarker(
+        _ number: Int, at center: CGPoint, size: AnnotationSize, color: AnnotationColor, in ctx: CGContext
+    ) {
+        let diameter = size.markerDiameter
+        let circle = CGRect(x: center.x - diameter / 2, y: center.y - diameter / 2, width: diameter, height: diameter)
+        ctx.setFillColor(color.cgColor)
+        ctx.fillEllipse(in: circle)
+        // Light colours need dark digits to stay readable.
+        let digitColor: NSColor = (color == .yellow || color == .white) ? .black : .white
+        let font = NSFont.systemFont(ofSize: diameter * 0.55, weight: .bold)
+        let text = "\(number)" as NSString
+        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: digitColor]
+        let measured = text.size(withAttributes: attributes)
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: true)
+        text.draw(
+            at: CGPoint(x: center.x - measured.width / 2, y: center.y - measured.height / 2), withAttributes: attributes)
+        NSGraphicsContext.restoreGraphicsState()
     }
 
     /// The shaft plus the two barbs of the arrow head.
@@ -81,8 +117,11 @@ enum AnnotationRenderer {
         NSGraphicsContext.restoreGraphicsState()
     }
 
-    private static func pixelate(
-        _ rect: CGRect, in ctx: CGContext, source: CGImage, sourceOrigin: CGPoint, pointScale: CGFloat
+    /// Hides `rect`: every block is reduced to its average colour, which destroys the detail underneath.
+    /// Pixelate then shows the blocks as they are; blur smooths them. Both lose the same information,
+    /// so neither can be reversed.
+    private static func hide(
+        _ rect: CGRect, in ctx: CGContext, source: CGImage, sourceOrigin: CGPoint, pointScale: CGFloat, smooth: Bool
     ) {
         let pixelRect = CGRect(
             x: (rect.minX - sourceOrigin.x) * pointScale, y: (rect.minY - sourceOrigin.y) * pointScale,
@@ -110,13 +149,17 @@ enum AnnotationRenderer {
         let target = CGRect(
             x: sourceOrigin.x + pixelRect.minX / pointScale, y: sourceOrigin.y + pixelRect.minY / pointScale,
             width: pixelRect.width / pointScale, height: pixelRect.height / pointScale)
+        // A smoothed enlargement fades at its rim, so draw it a little larger and clip to the area.
+        let drawRect = smooth
+            ? target.insetBy(dx: -target.width / CGFloat(smallWidth) / 2, dy: -target.height / CGFloat(smallHeight) / 2)
+            : target
         ctx.saveGState()
         ctx.clip(to: target)
-        ctx.interpolationQuality = .none
+        ctx.interpolationQuality = smooth ? .high : .none
         // The context is y-down, so flip locally to draw the image upright.
-        ctx.translateBy(x: target.minX, y: target.maxY)
+        ctx.translateBy(x: drawRect.minX, y: drawRect.maxY)
         ctx.scaleBy(x: 1, y: -1)
-        ctx.draw(reduced, in: CGRect(x: 0, y: 0, width: target.width, height: target.height))
+        ctx.draw(reduced, in: CGRect(x: 0, y: 0, width: drawRect.width, height: drawRect.height))
         ctx.restoreGState()
     }
 }

@@ -267,10 +267,13 @@ final class SelectionView: NSView {
                 document.select(nil)
                 selectionDrag = .move(grabOffset: CGSize(width: point.x - rect.minX, height: point.y - rect.minY))
             }
-        case .rectangle, .arrow, .pixelate:
+        case .rectangle, .ellipse, .arrow, .line, .highlight, .pixelate, .blur:
             document.select(nil)
             drawStart = point
             draftShape = shape(from: point, to: point)
+        case .marker:
+            // One click places the next number.
+            document.add(Annotation(kind: .marker(center: point, number: document.nextMarkerNumber), color: color, size: size))
         case .text:
             document.select(nil)
             textDraft = (point, "")
@@ -283,9 +286,13 @@ final class SelectionView: NSView {
         let kind: AnnotationKind
         switch tool {
         case .rectangle: kind = .rectangle(CaptureGeometry.normalizedRect(from: start, to: end))
+        case .ellipse: kind = .ellipse(CaptureGeometry.normalizedRect(from: start, to: end))
+        case .highlight: kind = .highlight(CaptureGeometry.normalizedRect(from: start, to: end))
         case .pixelate: kind = .pixelate(CaptureGeometry.normalizedRect(from: start, to: end))
+        case .blur: kind = .blur(CaptureGeometry.normalizedRect(from: start, to: end))
         case .arrow: kind = .arrow(from: start, to: end)
-        case .select, .text: return nil
+        case .line: kind = .line(from: start, to: end)
+        case .select, .text, .marker: return nil
         }
         return Annotation(kind: kind, color: color, size: size)
     }
@@ -328,9 +335,10 @@ final class SelectionView: NSView {
         guard let shape = draftShape else { return }
         let big: Bool
         switch shape.kind {
-        case .rectangle(let rect), .pixelate(let rect): big = rect.width >= 3 && rect.height >= 3
-        case .arrow(let from, let to): big = hypot(to.x - from.x, to.y - from.y) >= 6
-        case .text: big = false
+        case .rectangle(let rect), .ellipse(let rect), .highlight(let rect), .pixelate(let rect), .blur(let rect):
+            big = rect.width >= 3 && rect.height >= 3
+        case .arrow(let from, let to), .line(let from, let to): big = hypot(to.x - from.x, to.y - from.y) >= 6
+        case .text, .marker: big = false
         }
         if big { document.add(shape) }
     }

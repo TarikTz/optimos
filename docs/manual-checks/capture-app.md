@@ -91,3 +91,12 @@ for apps like this; if a capture seems to hang, look for that prompt. Install th
 58. [ ] Select an area and press Save (button or `⌘S`). Expected: a save panel opens in front, pre-filled with a timestamped name; choosing a folder saves there and the toast names it. Cancelling the panel saves nothing and shows no error.
 59. [ ] Untick **Ask Where to Save Each Time** in the menu. Expected: Save now writes straight into the folder named on the "Autosaving to:" line with no panel. Tick it again and the panel returns.
 
+## More annotation tools
+60. [ ] The toolbar's top row shows ten tools: select, rectangle, circle, arrow, line, text, highlight, numbered marker, pixelate, blur (hover for names and keys V R O A L T H N P B). It still fits the screen and nothing overlaps.
+61. [ ] Circle (`O`) draws an ellipse in the dragged box; Line (`L`) a plain line; both can be selected, moved, resized with handles, recoloured and deleted.
+62. [ ] Highlight (`H`) with yellow tints a band while the text underneath stays readable. A highlight drawn over a pixelate or blur area stays on top of it.
+63. [ ] Numbered marker (`N`): each click places the next number (1, 2, 3, ...) in the chosen colour and size; digits are readable on every colour including yellow and white. Markers move and delete but have no handles; undo removes the last one.
+64. [ ] Blur (`B`) over text: the area becomes smooth and the text cannot be read, even at the largest size. Compare with Pixelate (`P`): both hide the text equally.
+65. [ ] Copy and Save include every new tool exactly as shown, at full Retina resolution, and in the right place after the selection has been resized or moved.
+66. [ ] There is no separate crop tool: resizing the selection with its handles crops. (This is by design.)
+

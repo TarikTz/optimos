@@ -4,9 +4,14 @@ import CoreGraphics
 enum AnnotationTool: Equatable, CaseIterable, Sendable {
     case select
     case rectangle
+    case ellipse
     case arrow
+    case line
     case text
+    case highlight
+    case marker
     case pixelate
+    case blur
 }
 
 enum AnnotationColor: CaseIterable, Equatable, Sendable {
@@ -46,13 +51,29 @@ enum AnnotationSize: CaseIterable, Equatable, Sendable {
         case .large: 30
         }
     }
+
+    /// Diameter in points of a numbered marker.
+    var markerDiameter: CGFloat {
+        switch self {
+        case .small: 22
+        case .medium: 28
+        case .large: 38
+        }
+    }
 }
 
 enum AnnotationKind: Equatable, Sendable {
     case rectangle(CGRect)
+    case ellipse(CGRect)
     case arrow(from: CGPoint, to: CGPoint)
+    case line(from: CGPoint, to: CGPoint)
     case text(origin: CGPoint, string: String)
+    /// A translucent coloured band, like a highlighter pen.
+    case highlight(CGRect)
+    /// A numbered circle; `center` is in the same points as everything else.
+    case marker(center: CGPoint, number: Int)
     case pixelate(CGRect)
+    case blur(CGRect)
 }
 
 /// One drawn object, in display-local points (top-left origin), like `CaptureSelection`.
@@ -74,13 +95,30 @@ struct Annotation: Equatable, Identifiable, Sendable {
         return false
     }
 
+    /// Pixelate and blur hide what is underneath; they always render below the other annotations.
+    var isRedaction: Bool {
+        switch kind {
+        case .pixelate, .blur: true
+        default: false
+        }
+    }
+
     func translated(by delta: CGSize) -> Annotation {
         var copy = self
         switch kind {
         case .rectangle(let rect): copy.kind = .rectangle(rect.offsetBy(dx: delta.width, dy: delta.height))
+        case .ellipse(let rect): copy.kind = .ellipse(rect.offsetBy(dx: delta.width, dy: delta.height))
+        case .highlight(let rect): copy.kind = .highlight(rect.offsetBy(dx: delta.width, dy: delta.height))
         case .pixelate(let rect): copy.kind = .pixelate(rect.offsetBy(dx: delta.width, dy: delta.height))
+        case .blur(let rect): copy.kind = .blur(rect.offsetBy(dx: delta.width, dy: delta.height))
+        case .marker(let center, let number):
+            copy.kind = .marker(center: CGPoint(x: center.x + delta.width, y: center.y + delta.height), number: number)
         case .arrow(let from, let to):
             copy.kind = .arrow(
+                from: CGPoint(x: from.x + delta.width, y: from.y + delta.height),
+                to: CGPoint(x: to.x + delta.width, y: to.y + delta.height))
+        case .line(let from, let to):
+            copy.kind = .line(
                 from: CGPoint(x: from.x + delta.width, y: from.y + delta.height),
                 to: CGPoint(x: to.x + delta.width, y: to.y + delta.height))
         case .text(let origin, let string):
@@ -93,9 +131,13 @@ struct Annotation: Equatable, Identifiable, Sendable {
     /// The area the annotation occupies (used for the selection outline and text hit testing).
     var bounds: CGRect {
         switch kind {
-        case .rectangle(let rect), .pixelate(let rect): rect
-        case .arrow(let from, let to):
+        case .rectangle(let rect), .ellipse(let rect), .highlight(let rect), .pixelate(let rect), .blur(let rect): rect
+        case .arrow(let from, let to), .line(let from, let to):
             CGRect(x: min(from.x, to.x), y: min(from.y, to.y), width: abs(from.x - to.x), height: abs(from.y - to.y))
+        case .marker(let center, _):
+            CGRect(
+                x: center.x - size.markerDiameter / 2, y: center.y - size.markerDiameter / 2,
+                width: size.markerDiameter, height: size.markerDiameter)
         case .text(let origin, let string):
             CGRect(origin: origin, size: AnnotationText.size(of: string, fontSize: size.fontSize))
         }

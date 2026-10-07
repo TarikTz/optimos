@@ -11,7 +11,7 @@ enum OverlayKeyAction: Equatable {
     case tool(AnnotationTool)
 
     /// Esc cancels; Return, keypad Enter and ⌘C copy; ⌘S saves; ⌘Z / ⇧⌘Z undo / redo; Delete removes
-    /// the selected annotation; V, R, A, T, P pick a tool. Key auto-repeats map to nothing.
+    /// the selected annotation; V, R, O, A, L, T, H, N, P, B pick a tool. Key auto-repeats map to nothing.
     static func from(keyCode: UInt16, modifiers: NSEvent.ModifierFlags, isRepeat: Bool) -> OverlayKeyAction? {
         guard !isRepeat else { return nil }
         let pressed = modifiers.intersection([.command, .shift, .option, .control])
@@ -30,6 +30,11 @@ enum OverlayKeyAction: Equatable {
         case 0 where plain: return .tool(.arrow)  // A
         case 17 where plain: return .tool(.text)  // T
         case 35 where plain: return .tool(.pixelate)  // P
+        case 31 where plain: return .tool(.ellipse)  // O
+        case 37 where plain: return .tool(.line)  // L
+        case 4 where plain: return .tool(.highlight)  // H
+        case 45 where plain: return .tool(.marker)  // N
+        case 11 where plain: return .tool(.blur)  // B
         default: return nil
         }
     }

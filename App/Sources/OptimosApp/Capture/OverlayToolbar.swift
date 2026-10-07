@@ -9,7 +9,7 @@ final class OverlayToolbar: NSVisualEffectView {
     private static let swatch: CGFloat = 18
     private static let spacing: CGFloat = 4
     private static let inset: CGFloat = 10
-    private static let toolCount = 5
+    private static let toolCount = 10
     private static let swatchCount = 6
     private static let sizeCount = 3
     private static let actionCount = 3
@@ -67,9 +67,14 @@ final class OverlayToolbar: NSVisualEffectView {
         let tools: [(AnnotationTool, String, String)] = [
             (.select, "cursorarrow", "Select and move (V)"),
             (.rectangle, "rectangle", "Rectangle (R)"),
+            (.ellipse, "circle", "Circle (O)"),
             (.arrow, "arrow.up.right", "Arrow (A)"),
+            (.line, "line.diagonal", "Line (L)"),
             (.text, "textformat", "Text (T)"),
-            (.pixelate, "square.grid.3x3.fill", "Hide sensitive content (P)"),
+            (.highlight, "highlighter", "Highlight (H)"),
+            (.marker, "number.circle", "Numbered marker (N)"),
+            (.pixelate, "square.grid.3x3.fill", "Pixelate to hide sensitive content (P)"),
+            (.blur, "drop", "Blur to hide sensitive content (B)"),
         ]
         for (tool, symbol, tip) in tools {
             let button = makeButton(

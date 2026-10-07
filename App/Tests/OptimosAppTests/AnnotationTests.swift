@@ -143,3 +143,104 @@ import Testing
         #expect(p[0] > 200 && p[1] < 80 && p[2] < 80)
     }
 }
+
+@Suite struct MoreToolsTests {
+    private let bounds = CGRect(x: 0, y: 0, width: 400, height: 300)
+
+    @Test func ellipseIsHitOnItsOutlineNotItsMiddleOrCorner() {
+        let a = Annotation(kind: .ellipse(CGRect(x: 0, y: 0, width: 200, height: 100)), color: .red, size: .small)
+        #expect(AnnotationHitTesting.hits(a, CGPoint(x: 100, y: 1)))
+        #expect(AnnotationHitTesting.hits(a, CGPoint(x: 1, y: 50)))
+        #expect(!AnnotationHitTesting.hits(a, CGPoint(x: 100, y: 50)))
+        #expect(!AnnotationHitTesting.hits(a, CGPoint(x: 2, y: 2)))  // the bounding box corner is outside the ellipse
+    }
+
+    @Test func lineHighlightMarkerAndBlurAreHitWhereTheyAre() {
+        let line = Annotation(kind: .line(from: .zero, to: CGPoint(x: 100, y: 0)), color: .red, size: .small)
+        #expect(AnnotationHitTesting.hits(line, CGPoint(x: 50, y: 3)))
+        let band = Annotation(kind: .highlight(CGRect(x: 10, y: 10, width: 80, height: 20)), color: .yellow, size: .small)
+        #expect(AnnotationHitTesting.hits(band, CGPoint(x: 50, y: 20)))
+        let marker = Annotation(kind: .marker(center: CGPoint(x: 50, y: 50), number: 1), color: .red, size: .medium)
+        #expect(AnnotationHitTesting.hits(marker, CGPoint(x: 60, y: 50)))
+        #expect(!AnnotationHitTesting.hits(marker, CGPoint(x: 90, y: 50)))
+        let blur = Annotation(kind: .blur(CGRect(x: 0, y: 0, width: 50, height: 50)), color: .red, size: .small)
+        #expect(blur.isRedaction)
+        // A shape drawn over a blurred area wins over it.
+        let box = Annotation(kind: .rectangle(CGRect(x: 0, y: 0, width: 50, height: 50)), color: .red, size: .small)
+        #expect(AnnotationHitTesting.annotation(at: CGPoint(x: 25, y: 1), in: [box, blur])?.id == box.id)
+    }
+
+    @Test func markersCountUpFromTheHighestNumber() {
+        var doc = AnnotationDocument()
+        #expect(doc.nextMarkerNumber == 1)
+        doc.add(Annotation(kind: .marker(center: .zero, number: 1), color: .red, size: .medium))
+        doc.add(Annotation(kind: .marker(center: CGPoint(x: 50, y: 0), number: 2), color: .red, size: .medium))
+        #expect(doc.nextMarkerNumber == 3)
+    }
+
+    @Test func ellipseAndLineResizeButMarkersOnlyMove() {
+        let oval = Annotation(kind: .ellipse(CGRect(x: 10, y: 10, width: 50, height: 50)), color: .red, size: .medium)
+        #expect(oval.resized(dragging: .bottomRight, to: CGPoint(x: 100, y: 80), within: bounds).bounds
+            == CGRect(x: 10, y: 10, width: 90, height: 70))
+        let line = Annotation(kind: .line(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 100, y: 100)), color: .red, size: .medium)
+        #expect(line.resized(dragging: .arrowStart, to: CGPoint(x: 0, y: 5), within: bounds).kind
+            == .line(from: CGPoint(x: 0, y: 5), to: CGPoint(x: 100, y: 100)))
+        let marker = Annotation(kind: .marker(center: CGPoint(x: 50, y: 50), number: 1), color: .red, size: .medium)
+        #expect(marker.handlePositions.isEmpty)
+        #expect(marker.translated(by: CGSize(width: 5, height: 5)).kind == .marker(center: CGPoint(x: 55, y: 55), number: 1))
+    }
+}
+
+@Suite struct MoreToolsRenderingTests {
+    private func image() -> CGImage {
+        let ctx = CGContext(
+            data: nil, width: 80, height: 80, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        for y in 0..<80 {
+            for x in 0..<80 {
+                ctx.setFillColor(gray: (x + y) % 2 == 0 ? 0 : 1, alpha: 1)
+                ctx.fill(CGRect(x: x, y: y, width: 1, height: 1))
+            }
+        }
+        return ctx.makeImage()!
+    }
+
+    private func pixel(_ image: CGImage, _ x: Int, _ y: Int) -> [UInt8] {
+        var data = [UInt8](repeating: 0, count: 4)
+        let ctx = CGContext(
+            data: &data, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.draw(image, in: CGRect(x: -x, y: -(image.height - 1 - y), width: image.width, height: image.height))
+        return data
+    }
+
+    private func render(_ annotation: Annotation) throws -> CGImage {
+        try #require(AnnotatedImageExporter.render(cropped: image(), annotations: [annotation], cropOrigin: .zero, pointScale: 1))
+    }
+
+    @Test func blurSmoothsTheAreaAndLeavesNoCheckerDetail() throws {
+        let out = try render(Annotation(kind: .blur(CGRect(x: 0, y: 0, width: 48, height: 48)), color: .red, size: .medium))
+        // Inside the area neighbouring pixels are now nearly the same grey, even across a block boundary.
+        for x in [10, 11, 12, 23, 24, 25] {
+            #expect(abs(Int(pixel(out, x, 20)[0]) - Int(pixel(out, x + 1, 20)[0])) < 24)
+        }
+        #expect(pixel(out, 70, 70)[0] != pixel(out, 71, 70)[0])  // outside it the checker is untouched
+    }
+
+    @Test func highlightTintsWithoutHidingAndMarkerFillsItsCircle() throws {
+        let tinted = try render(Annotation(kind: .highlight(CGRect(x: 0, y: 0, width: 40, height: 40)), color: .yellow, size: .medium))
+        // Still some difference between the black and white checker squares (the picture is visible) but yellowed.
+        #expect(pixel(tinted, 1, 0)[0] != pixel(tinted, 2, 0)[0])
+        #expect(pixel(tinted, 2, 0)[2] < 255)  // blue channel is pulled down on white
+        let marked = try render(Annotation(kind: .marker(center: CGPoint(x: 40, y: 40), number: 1), color: .red, size: .large))
+        let p = pixel(marked, 40 + 14, 40)  // inside the circle, away from the digit
+        #expect(p[0] > 200 && p[1] < 90)
+    }
+
+    @Test func ellipseAndLineDrawInTheirColour() throws {
+        let oval = try render(Annotation(kind: .ellipse(CGRect(x: 10, y: 10, width: 60, height: 60)), color: .blue, size: .large))
+        #expect(pixel(oval, 40, 10)[2] > 200 && pixel(oval, 40, 10)[0] < 80)  // top of the outline
+        let line = try render(Annotation(kind: .line(from: CGPoint(x: 5, y: 40), to: CGPoint(x: 75, y: 40)), color: .green, size: .large))
+        #expect(pixel(line, 40, 40)[1] > 150 && pixel(line, 40, 40)[0] < 100)
+    }
+}

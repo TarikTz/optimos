@@ -64,5 +64,10 @@ import Testing
         #expect(action(35) == .tool(.pixelate))
         #expect(action(9) == .tool(.select))
         #expect(action(15, .command) == nil)
+        #expect(action(31) == .tool(.ellipse))
+        #expect(action(37) == .tool(.line))
+        #expect(action(4) == .tool(.highlight))
+        #expect(action(45) == .tool(.marker))
+        #expect(action(11) == .tool(.blur))
     }
 }
