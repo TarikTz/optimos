@@ -12,11 +12,13 @@ final class CaptureCoordinator {
     private let toast: ToastPresenter
     private let overlay: SelectionOverlayController
     private let saveLocation: SaveLocationStore
+    private let captureSettings: CaptureSettingsStore
     private var isBusy = false
 
     init(
         capture: CaptureService, output: OutputService, permission: PermissionService,
-        toast: ToastPresenter, overlay: SelectionOverlayController, saveLocation: SaveLocationStore
+        toast: ToastPresenter, overlay: SelectionOverlayController, saveLocation: SaveLocationStore,
+        captureSettings: CaptureSettingsStore = CaptureSettingsStore()
     ) {
         self.capture = capture
         self.output = output
@@ -24,6 +26,7 @@ final class CaptureCoordinator {
         self.toast = toast
         self.overlay = overlay
         self.saveLocation = saveLocation
+        self.captureSettings = captureSettings
     }
 
     func perform(_ action: HotkeyAction) {
@@ -94,9 +97,10 @@ final class CaptureCoordinator {
     /// Asks where to save this screenshot, starting in the remembered folder.
     private func chooseSaveFile() -> URL? {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png]
+        let format = captureSettings.format
+        panel.allowedContentTypes = [format == .png ? .png : format == .jpeg ? .jpeg : .webP]
         panel.canCreateDirectories = true
-        panel.nameFieldStringValue = ScreenshotFilename.make(for: Date())
+        panel.nameFieldStringValue = ScreenshotFilename.make(for: Date(), fileExtension: format.fileExtension)
         panel.message = "Choose where to save the screenshot."
         var isDirectory: ObjCBool = false
         if FileManager.default.fileExists(atPath: saveLocation.directory.path, isDirectory: &isDirectory),

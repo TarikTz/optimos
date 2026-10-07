@@ -15,7 +15,7 @@ enum HotkeyAction: UInt32, CaseIterable, Sendable {
     }
 }
 
-struct Hotkey: Equatable, Sendable {
+struct Hotkey: Equatable, Sendable, Codable {
     let keyCode: UInt32
     /// Carbon modifier mask (controlKey | optionKey | cmdKey | shiftKey).
     let modifiers: UInt32

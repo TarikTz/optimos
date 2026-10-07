@@ -72,36 +72,38 @@ struct OutputResult: Equatable, Sendable {
 }
 
 struct OutputService: Sendable {
-    typealias Optimizer = @Sendable (Data) async throws -> Data
+    /// Turns PNG bytes into the output bytes for the given settings. Replaceable in tests.
+    typealias Optimizer = @Sendable (Data, OptimizeSettings) async throws -> Data
 
     var pasteboard: any Pasteboard
     /// Read at save time, so a folder chosen in the menu takes effect immediately.
     var saveDirectory: @Sendable () -> URL
+    /// Read at save time: the capture format (Save only; Copy is always PNG) and level.
+    var captureSettings: @Sendable () -> (format: ImageFormat, level: OptimizeLevel)
     var optimizer: Optimizer
     var now: @Sendable () -> Date
 
     init(
         pasteboard: any Pasteboard = SystemPasteboard(),
         saveDirectory: @escaping @Sendable () -> URL = { SaveLocationStore.defaultDirectory },
+        captureSettings: @escaping @Sendable () -> (format: ImageFormat, level: OptimizeLevel) = { (.png, .lossless) },
         optimizer: @escaping Optimizer = OutputService.screenshotOptimizer,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.pasteboard = pasteboard
         self.saveDirectory = saveDirectory
+        self.captureSettings = captureSettings
         self.optimizer = optimizer
         self.now = now
     }
 
-    /// OptimosCore's built-in Screenshot preset: lossless PNG, metadata stripped.
-    static let screenshotOptimizer: Optimizer = { data in
-        guard let preset = Preset.builtIns.first(where: { $0.name == "Screenshot" }) else {
-            throw OptimosError.invalidOptions("built-in Screenshot preset is missing")
-        }
-        return try await preset.pipeline().run(data).bytes
+    /// OptimosCore's optimizer, with the chosen level and output format.
+    static let screenshotOptimizer: Optimizer = { data, settings in
+        try await settings.process(data).bytes
     }
 
     func copy(_ image: CGImage) async throws -> OutputResult {
-        let prepared = try await prepare(image)
+        let prepared = try await prepare(image, format: .png)
         pasteboard.writePNG(prepared.bytes)
         return OutputResult(
             destination: .clipboard, originalBytes: prepared.originalBytes,
@@ -111,8 +113,16 @@ struct OutputService: Sendable {
     /// Saves into the configured folder with a timestamped name, or to `destination` when the user
     /// picked an exact file in a save panel.
     func save(_ image: CGImage, to destination: URL? = nil) async throws -> OutputResult {
-        let prepared = try await prepare(image)
-        let url = try destination.map { try writeExactly(prepared.bytes, to: $0) } ?? write(prepared.bytes)
+        let format = captureSettings().format
+        let prepared = try await prepare(image, format: format)
+        // If optimizing failed the bytes are a plain PNG, so the file must say .png whatever was chosen.
+        let actual: ImageFormat = prepared.isPlainPNG ? .png : format
+        let fixedDestination = destination.map {
+            $0.pathExtension.lowercased() == actual.fileExtension
+                ? $0 : $0.deletingPathExtension().appendingPathExtension(actual.fileExtension)
+        }
+        let url = try fixedDestination.map { try writeExactly(prepared.bytes, to: $0) }
+            ?? write(prepared.bytes, format: actual)
         return OutputResult(
             destination: .file(url), originalBytes: prepared.originalBytes,
             finalBytes: prepared.bytes.count, warning: prepared.warning)
@@ -122,16 +132,19 @@ struct OutputService: Sendable {
         let bytes: Data
         let originalBytes: Int
         let warning: String?
+        var isPlainPNG = false
     }
 
     /// Encodes to PNG and optimizes. If optimization fails the plain PNG is used and a warning is
     /// reported, so a screenshot is never lost and the problem is never silent.
-    private func prepare(_ image: CGImage) async throws -> Prepared {
+    private func prepare(_ image: CGImage, format: ImageFormat) async throws -> Prepared {
         let png = try PNGEncoder.data(from: image)
         do {
-            return Prepared(bytes: try await optimizer(png), originalBytes: png.count, warning: nil)
+            let settings = OptimizeSettings(level: captureSettings().level, format: format)
+            return Prepared(bytes: try await optimizer(png, settings), originalBytes: png.count, warning: nil)
         } catch {
-            return Prepared(bytes: png, originalBytes: png.count, warning: "not optimized: \(error)")
+            // The plain PNG is always usable; Save then writes it as a .png whatever the format setting.
+            return Prepared(bytes: png, originalBytes: png.count, warning: "not optimized: \(error)", isPlainPNG: true)
         }
     }
 
@@ -150,7 +163,7 @@ struct OutputService: Sendable {
         }
     }
 
-    private func write(_ bytes: Data) throws -> URL {
+    private func write(_ bytes: Data, format: ImageFormat) throws -> URL {
         do {
             let directory = saveDirectory()
             if Self.requiresExistingFolder(directory) {
@@ -166,12 +179,12 @@ struct OutputService: Sendable {
             } else {
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             }
-            let name = ScreenshotFilename.make(for: now())
+            let name = ScreenshotFilename.make(for: now(), fileExtension: format.fileExtension)
             let base = (name as NSString).deletingPathExtension
             var url = directory.appendingPathComponent(name)
             var counter = 2
             while FileManager.default.fileExists(atPath: url.path) {
-                url = directory.appendingPathComponent("\(base) \(counter).png")
+                url = directory.appendingPathComponent("\(base) \(counter).\(format.fileExtension)")
                 counter += 1
             }
             try bytes.write(to: url, options: .atomic)

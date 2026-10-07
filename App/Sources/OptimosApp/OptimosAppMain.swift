@@ -24,10 +24,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         let permission = PermissionService()
         let saveLocation = SaveLocationStore()
+        let captureSettings = CaptureSettingsStore()
         let coordinator = CaptureCoordinator(
-            capture: ScreenCaptureKitService(), output: OutputService(saveDirectory: { saveLocation.directory }),
+            capture: ScreenCaptureKitService(), output: OutputService(
+                saveDirectory: { saveLocation.directory },
+                captureSettings: { (captureSettings.format, captureSettings.level) }),
             permission: permission, toast: ToastPresenter(), overlay: SelectionOverlayController(),
-            saveLocation: saveLocation)
+            saveLocation: saveLocation, captureSettings: captureSettings)
         let menuBar = MenuBarController(permission: permission, saveLocation: saveLocation)
         let route: (HotkeyAction) -> Void = { [optimizerWindow] action in
             if action == .openOptimizer { optimizerWindow.show() } else { coordinator.perform(action) }

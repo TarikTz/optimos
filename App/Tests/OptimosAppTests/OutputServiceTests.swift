@@ -39,7 +39,7 @@ private func temporaryDirectory() -> URL {
 @Suite struct OutputServiceTests {
     @Test func copyWritesTheOptimizedBytesToTheClipboard() async throws {
         let board = FakePasteboard()
-        let service = OutputService(pasteboard: board, optimizer: { _ in Data("OPT".utf8) })
+        let service = OutputService(pasteboard: board, optimizer: { _, _ in Data("OPT".utf8) })
         let result = try await service.copy(makeImage())
         #expect(board.written == [Data("OPT".utf8)])
         #expect(result.destination == .clipboard)
@@ -50,7 +50,7 @@ private func temporaryDirectory() -> URL {
 
     @Test func copyFallsBackToThePlainPNGAndSaysSo() async throws {
         let board = FakePasteboard()
-        let service = OutputService(pasteboard: board, optimizer: { _ in throw StubError() })
+        let service = OutputService(pasteboard: board, optimizer: { _, _ in throw StubError() })
         let result = try await service.copy(makeImage())
         #expect(ImageFormat.sniff(try #require(board.written.first)) == .png)
         #expect(result.warning?.hasPrefix("not optimized") == true)
@@ -64,7 +64,7 @@ private func temporaryDirectory() -> URL {
         let date = Date(timeIntervalSince1970: 1_800_000_000)
         let service = OutputService(
             pasteboard: FakePasteboard(), saveDirectory: { directory },
-            optimizer: { _ in Data("OPT".utf8) }, now: { date })
+            optimizer: { _, _ in Data("OPT".utf8) }, now: { date })
 
         let first = try await service.save(makeImage())
         guard case .file(let firstURL) = first.destination else {
@@ -91,7 +91,7 @@ private func temporaryDirectory() -> URL {
         defer { try? FileManager.default.removeItem(at: directory.deletingLastPathComponent()) }
         let service = OutputService(
             pasteboard: FakePasteboard(), saveDirectory: { directory },
-            optimizer: { _ in Data("OPT".utf8) }, now: { Date(timeIntervalSince1970: 1_800_000_000) })
+            optimizer: { _, _ in Data("OPT".utf8) }, now: { Date(timeIntervalSince1970: 1_800_000_000) })
         let result = try await service.save(makeImage())
         #expect(result.toastMessage.hasPrefix("Saved to Shots · "))
         #expect(result.toastMessage.contains(ScreenshotFilename.make(for: Date(timeIntervalSince1970: 1_800_000_000))))
@@ -104,7 +104,7 @@ private func temporaryDirectory() -> URL {
         defer { try? FileManager.default.removeItem(at: blocker) }
         let service = OutputService(
             pasteboard: FakePasteboard(), saveDirectory: { blocker.appendingPathComponent("sub") },
-            optimizer: { _ in Data("OPT".utf8) })
+            optimizer: { _, _ in Data("OPT".utf8) })
         await #expect(throws: OutputError.self) { try await service.save(makeImage()) }
     }
 
@@ -112,7 +112,7 @@ private func temporaryDirectory() -> URL {
         let parent = temporaryDirectory()
         let missing = parent.appendingPathComponent("missing")
         let service = OutputService(
-            pasteboard: FakePasteboard(), saveDirectory: { missing }, optimizer: { _ in Data("OPT".utf8) })
+            pasteboard: FakePasteboard(), saveDirectory: { missing }, optimizer: { _, _ in Data("OPT".utf8) })
         do {
             _ = try await service.save(makeImage())
             Issue.record("expected cannotWrite")
@@ -131,7 +131,7 @@ private func temporaryDirectory() -> URL {
         let mount = "/Volumes/optimos-no-such-drive-\(UUID().uuidString)"
         let folder = URL(fileURLWithPath: mount).appendingPathComponent("Shots")
         let service = OutputService(
-            pasteboard: FakePasteboard(), saveDirectory: { folder }, optimizer: { _ in Data("OPT".utf8) })
+            pasteboard: FakePasteboard(), saveDirectory: { folder }, optimizer: { _, _ in Data("OPT".utf8) })
         await #expect(throws: OutputError.self) { try await service.save(makeImage()) }
         #expect(!FileManager.default.fileExists(atPath: mount))
     }
@@ -156,7 +156,7 @@ private func temporaryDirectory() -> URL {
         }
         let box = Box(first)
         let service = OutputService(
-            pasteboard: FakePasteboard(), saveDirectory: { box.value }, optimizer: { _ in Data("OPT".utf8) })
+            pasteboard: FakePasteboard(), saveDirectory: { box.value }, optimizer: { _, _ in Data("OPT".utf8) })
         let a = try await service.save(makeImage())
         box.value = second
         let b = try await service.save(makeImage())
@@ -176,7 +176,7 @@ private func temporaryDirectory() -> URL {
     /// Needs the optimizer tools from the README (oxipng) installed.
     @Test func realScreenshotOptimizerReturnsAValidPNGNoLargerThanTheInput() async throws {
         let png = try PNGEncoder.data(from: makeImage())
-        let optimized = try await OutputService.screenshotOptimizer(png)
+        let optimized = try await OutputService.screenshotOptimizer(png, OptimizeSettings(level: .lossless, format: .png))
         #expect(ImageFormat.sniff(optimized) == .png)
         #expect(optimized.count <= png.count)
     }
