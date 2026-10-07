@@ -21,9 +21,9 @@ USE
 - Menu bar icon > Preferences changes shortcuts, save location, formats and more.
 
 NOTES
-- Because the app is not signed, macOS may ask for Screen Recording permission again after you
-  install an update. If captures stop working, remove OptimosApp from that list, add it again,
-  and restart the app.
+- When Screen Recording access turns on, OptimosApp offers to restart itself once. Accept, and captures work.
+- If captures stop working after you install a different build, remove OptimosApp from the Screen
+  Recording list with the minus button, run the app again, allow it, and accept the restart.
 - OptimosApp bundles open-source tools (oxipng, pngquant, libjpeg-turbo) under their own licenses,
   listed in OptimosApp.app/Contents/Resources/licenses.
 - Questions or problems: contact Tarik Omercehajic.

@@ -15,12 +15,13 @@ final class CaptureCoordinator {
     private let saveLocation: SaveLocationStore
     private let captureSettings: CaptureSettingsStore
     private let sharePresenter = SharePresenter()
+    private let permissionGuide: PermissionGuide
     private var isBusy = false
 
     init(
         capture: CaptureService, output: OutputService, permission: PermissionService,
         toast: ToastPresenter, overlay: SelectionOverlayController, saveLocation: SaveLocationStore,
-        captureSettings: CaptureSettingsStore = CaptureSettingsStore()
+        captureSettings: CaptureSettingsStore = CaptureSettingsStore(), permissionGuide: PermissionGuide? = nil
     ) {
         self.capture = capture
         self.output = output
@@ -29,6 +30,7 @@ final class CaptureCoordinator {
         self.overlay = overlay
         self.saveLocation = saveLocation
         self.captureSettings = captureSettings
+        self.permissionGuide = permissionGuide ?? PermissionGuide(permission: permission)
     }
 
     func perform(_ action: HotkeyAction) {
@@ -46,10 +48,10 @@ final class CaptureCoordinator {
 
     private func run(_ action: HotkeyAction) async {
         guard permission.isGranted else {
-            permission.request()
+            permissionGuide.begin()
             toast.show(
-                "Allow Screen Recording for OptimosApp in System Settings, then restart. If already on, remove OptimosApp from the list and add it again.",
-                isWarning: true, duration: 5)
+                "Allow OptimosApp under Screen & System Audio Recording and it will offer to restart. If it is already listed but not working, remove it with − and add it again.",
+                isWarning: true, duration: 6)
             return
         }
         do {

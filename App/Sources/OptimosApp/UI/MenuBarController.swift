@@ -4,6 +4,7 @@ import AppKit
 final class MenuBarController: NSObject, NSMenuDelegate {
     var onAction: ((HotkeyAction) -> Void)?
     var onOpenPreferences: (() -> Void)?
+    var onGrantAccess: (() -> Void)?
     var onAbout: (() -> Void)?
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -110,8 +111,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     }
 
     @objc private func grantAccess() {
-        permission.request()
-        permission.openSystemSettings()
+        onGrantAccess?()
     }
 
     @objc private func quit() {

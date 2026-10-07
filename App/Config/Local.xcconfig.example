@@ -1,5 +1,11 @@
-// Copy this file to Local.xcconfig (git-ignored) and set your team id.
-// A stable signing identity keeps the Screen Recording permission across rebuilds.
-CODE_SIGN_STYLE = Automatic
-CODE_SIGN_IDENTITY = Apple Development
-DEVELOPMENT_TEAM = YOURTEAMID
+// Copy this file to Local.xcconfig (git-ignored). A stable signing identity keeps the Screen
+// Recording permission across rebuilds and updates (ad-hoc signing changes on every build).
+//
+// Option 1, no Apple account: run scripts/make-signing-cert.sh once, then use:
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = OptimosApp Local Signing
+//
+// Option 2, with an Apple Developer team:
+// CODE_SIGN_STYLE = Automatic
+// CODE_SIGN_IDENTITY = Apple Development
+// DEVELOPMENT_TEAM = YOURTEAMID

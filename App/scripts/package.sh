@@ -11,6 +11,9 @@ APP=build/release/Build/Products/Release/OptimosApp.app
 DIST=dist
 STAGING=build/dmg
 RES="$APP/Contents/Resources"
+# Same signing identity as the Xcode build (Config/Local.xcconfig), or ad hoc ("-") without one.
+SIGN_ID=${SIGN_IDENTITY:-$(sed -n 's/^CODE_SIGN_IDENTITY *= *//p' Config/Local.xcconfig 2> /dev/null | head -1)}
+SIGN_ID=${SIGN_ID:--}
 
 echo "==> Building OptimosApp $VERSION (Release)"
 xcodegen generate --quiet
@@ -75,9 +78,9 @@ Its complete corresponding source code is available at:
 and, on request, from the OptimosApp author. The GPL text is in pngquant-COPYRIGHT-and-GPL-3.0.
 OFFER
 
-echo "==> Ad-hoc signing"
-for f in "$RES"/lib/* "$RES"/tools/*; do codesign --force --sign - "$f" > /dev/null 2>&1; done
-codesign --force --deep --sign - "$APP" > /dev/null 2>&1
+echo "==> Signing with: $SIGN_ID"
+for f in "$RES"/lib/* "$RES"/tools/*; do codesign --force --sign "$SIGN_ID" "$f" > /dev/null 2>&1; done
+codesign --force --deep --sign "$SIGN_ID" "$APP" > /dev/null 2>&1
 codesign --verify --deep --strict "$APP"
 
 echo "==> Smoke test: the bundled tools run with no Homebrew on the PATH"

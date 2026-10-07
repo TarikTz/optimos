@@ -27,12 +27,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let permission = PermissionService()
         let saveLocation = SaveLocationStore()
         let captureSettings = CaptureSettingsStore()
+        let permissionGuide = PermissionGuide(permission: permission)
         let coordinator = CaptureCoordinator(
             capture: ScreenCaptureKitService(), output: OutputService(
                 saveDirectory: { saveLocation.directory },
                 captureSettings: { (captureSettings.format, captureSettings.level, captureSettings.maxSide) }),
             permission: permission, toast: ToastPresenter(), overlay: SelectionOverlayController(),
-            saveLocation: saveLocation, captureSettings: captureSettings)
+            saveLocation: saveLocation, captureSettings: captureSettings,
+            permissionGuide: permissionGuide)
         let hotkeyStore = HotkeyStore()
         let menuBar = MenuBarController(
             permission: permission, saveLocation: saveLocation, hotkeys: { hotkeyStore.table })
@@ -52,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 })
         })
         menuBar.onOpenPreferences = { preferences.show() }
+        menuBar.onGrantAccess = { permissionGuide.begin() }
         menuBar.onAbout = { AboutPanel.show() }
         preferencesWindow = preferences
         self.coordinator = coordinator
