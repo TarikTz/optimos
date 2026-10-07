@@ -64,3 +64,6 @@ These avoid macOS's own `⌘⇧3/4/5` so they work on first launch. Manual verif
 ## Packaging a build to share
 `App/scripts/package.sh` builds a Release app, bundles `oxipng`, `pngquant` and `jpegtran` with their libraries (so it needs no Homebrew), ad-hoc signs everything, runs a smoke test of the bundled tools, and writes `App/dist/OptimosApp-<version>.dmg` (prints its SHA-256). The result needs Apple silicon and **macOS 26 or later** (the Homebrew `jpegtran` is built for macOS 26) and is **not signed or notarized**: friends follow `docs/INSTALL.md` (also placed in the DMG as "READ ME FIRST.txt") to get past Gatekeeper. The app bundle carries the licenses of the bundled tools and the pngquant source offer under `Contents/Resources/licenses`. To release a new version change `MARKETING_VERSION` in `App/project.yml` first.
 
+## Website
+`website/` holds the static landing page (Next.js static export, Tailwind, shadcn/ui and shadcnspace blocks). `cd website && pnpm install && pnpm build` writes the plain HTML site to `website/out`. See `website/README.md`; release links live in `website/lib/site.ts`.
+
