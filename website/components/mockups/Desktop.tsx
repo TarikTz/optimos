@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 export function Desktop({ children, className }: { children?: ReactNode; className?: string }) {
   return (
     <div
+      role="img"
+      aria-label="Mockup of the OptimosApp capture toolbar over a selected area of the screen"
       className={cn(
         "relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-indigo-400 via-sky-300 to-emerald-200 shadow-2xl shadow-primary/10 dark:from-indigo-900 dark:via-slate-800 dark:to-teal-900",
         className,

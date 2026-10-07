@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlusIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const FAQ_DATA = [
+export const FAQ_DATA = [
   {
     question: "Is OptimosApp really free?",
     answer:

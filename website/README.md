@@ -8,4 +8,7 @@ The static landing page for OptimosApp. Next.js (static export), Tailwind and sh
 
 `out/` is ordinary HTML, CSS and JS: upload it to any static host (GitHub Pages, Netlify, Cloudflare Pages). On GitHub Pages under `https://<user>.github.io/<repo>/`, set `basePath: "/<repo>"` in `next.config.ts` first.
 
-Everything that changes between releases lives in `lib/site.ts` (version, download and repo links, site URL). **Before publishing, replace the `OWNER` placeholder in the two GitHub links and set `url`.** The screenshots on the page are drawn mockups in `components/mockups/`; to use real screenshots, put them in `public/screens/` and swap the mockup component for an `<Image>` in `components/sections/Features.tsx`.
+## Deploying
+Live at https://optimos.075codes.com (nginx on the 075codes server; the DMG is hosted at https://075codes.com/OptimosApp-0.1.0.dmg). `scripts/deploy.sh` builds and uploads `out/` with rsync. The nginx host in `deploy/optimos.075codes.com.conf` was installed once into `/etc/nginx/sites-available` (symlinked into `sites-enabled`), and `certbot --nginx -d optimos.075codes.com` added HTTPS and renews it automatically. For a new release, change the version and download link in `lib/site.ts`.
+
+Everything that changes between releases lives in `lib/site.ts` (version, download and repo links, site URL). The "Source code" footer links stay hidden until you set `repoUrl` there. The screenshots on the page are drawn mockups in `components/mockups/`; to use real screenshots, put them in `public/screens/` and swap the mockup component for an `<Image>` in `components/sections/Features.tsx`.

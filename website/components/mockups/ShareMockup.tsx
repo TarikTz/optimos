@@ -10,7 +10,10 @@ const targets = [
 /** The macOS share menu opened on a finished capture. */
 export function ShareMockup() {
   return (
-    <div className="relative mx-auto w-full max-w-sm rounded-2xl border border-border bg-gradient-to-br from-sky-100 to-indigo-100 p-6 shadow-2xl shadow-primary/10 dark:from-slate-800 dark:to-indigo-950">
+    <div
+      role="img"
+      aria-label="Mockup of the macOS share menu offering AirDrop, Messages, Mail and Notes for a captured image"
+      className="relative mx-auto w-full max-w-sm rounded-2xl border border-border bg-gradient-to-br from-sky-100 to-indigo-100 p-6 shadow-2xl shadow-primary/10 dark:from-slate-800 dark:to-indigo-950">
       <div className="mb-4 flex items-center gap-3 rounded-xl bg-background/80 p-3 text-xs shadow-sm">
         <span className="size-10 shrink-0 rounded-lg bg-gradient-to-br from-blue-500 to-teal-400" />
         <span className="min-w-0">

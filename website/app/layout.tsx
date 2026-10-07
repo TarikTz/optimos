@@ -15,15 +15,28 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: `${SITE.name}: ${SITE.slogan}`,
+  title: SITE.title,
   description: SITE.description,
+  keywords: [...SITE.keywords],
+  authors: [{ name: SITE.author }],
+  applicationName: SITE.name,
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large" } },
   openGraph: {
-    title: `${SITE.name}: ${SITE.slogan}`,
-    description: SITE.description,
-    images: ["/og.png"],
     type: "website",
+    url: "/",
+    siteName: SITE.name,
+    locale: "en_US",
+    title: SITE.title,
+    description: SITE.description,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: `${SITE.name}: ${SITE.slogan}` }],
   },
-  twitter: { card: "summary_large_image", title: SITE.name, description: SITE.description, images: ["/og.png"] },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE.title,
+    description: SITE.description,
+    images: [{ url: "/og.png", alt: `${SITE.name}: ${SITE.slogan}` }],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

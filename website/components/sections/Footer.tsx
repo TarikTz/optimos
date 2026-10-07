@@ -21,8 +21,12 @@ export default function Footer() {
           <div className="flex flex-col gap-2 text-sm">
             <span className="font-medium">Project</span>
             <a className="text-muted-foreground hover:text-foreground" href={SITE.downloadUrl}>Download</a>
-            <a className="text-muted-foreground hover:text-foreground" href={SITE.repoUrl}>Source code</a>
-            <a className="text-muted-foreground hover:text-foreground" href={`${SITE.repoUrl}/blob/main/LICENSE`}>MIT license</a>
+            {SITE.repoUrl && (
+              <>
+                <a className="text-muted-foreground hover:text-foreground" href={SITE.repoUrl}>Source code</a>
+                <a className="text-muted-foreground hover:text-foreground" href={`${SITE.repoUrl}/blob/main/LICENSE`}>MIT license</a>
+              </>
+            )}
           </div>
           <div className="flex flex-col gap-2 text-sm">
             <span className="font-medium">Built with</span>

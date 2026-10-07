@@ -11,7 +11,11 @@ const rows = [
 /** The Optimize Images window with a few finished rows. */
 export function OptimizerMockup() {
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10">
+    <div
+      role="img"
+      aria-label="Mockup of the Optimize Images window listing files with their before and after sizes"
+      className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10"
+    >
       <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-3 py-2.5">
         <span className="size-2.5 rounded-full bg-red-400" />
         <span className="size-2.5 rounded-full bg-amber-400" />
