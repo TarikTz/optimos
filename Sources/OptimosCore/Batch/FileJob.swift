@@ -7,7 +7,7 @@ public struct FileJobResult: Equatable, Sendable {
         case replaced
         /// Same format: nothing smaller was possible, the file is untouched.
         case alreadyOptimal
-        /// Different format: a new file was written, the original is untouched.
+        /// A new file was written (a conversion, or a copy when originals are kept); the original is untouched.
         case converted(output: URL)
     }
 
@@ -30,7 +30,7 @@ public enum FileJob {
     ) async throws -> FileJobResult {
         let input = try Data(contentsOf: url)
         guard let inputFormat = ImageFormat.sniff(input) else { throw OptimosError.unsupportedFormat }
-        let willShrink = settings.maxSide.map { limit in (longestSide(of: input) ?? 0) > limit } ?? false
+        let willShrink = settings.willShrink(input)
         let result = try await settings.pipeline(inputFormat: inputFormat, willShrink: willShrink).run(input)
 
         if result.format == inputFormat {
@@ -39,12 +39,18 @@ public enum FileJob {
                 return FileJobResult(
                     source: url, outcome: .alreadyOptimal, originalBytes: input.count, newBytes: input.count)
             }
+            if !settings.replaceOriginals {
+                let output = try writeNew(result.bytes, besides: url, suffix: "-optimized", format: result.format)
+                return FileJobResult(
+                    source: url, outcome: .converted(output: output), originalBytes: input.count,
+                    newBytes: result.newSize)
+            }
             try willReplace(url)
             try replace(url, with: result.bytes)
             return FileJobResult(
                 source: url, outcome: .replaced, originalBytes: input.count, newBytes: result.newSize)
         }
-        let output = try writeNew(result.bytes, besides: url, format: result.format)
+        let output = try writeNew(result.bytes, besides: url, suffix: "", format: result.format)
         return FileJobResult(
             source: url, outcome: .converted(output: output), originalBytes: input.count,
             newBytes: result.newSize)
@@ -78,9 +84,11 @@ public enum FileJob {
 
     /// `photo.png` → `photo.webp`, or `photo 2.webp` if that exists. The final rename fails instead of
     /// overwriting, so two jobs racing for one name can never clobber each other.
-    private static func writeNew(_ bytes: Data, besides url: URL, format: ImageFormat) throws -> URL {
+    private static func writeNew(
+        _ bytes: Data, besides url: URL, suffix: String, format: ImageFormat
+    ) throws -> URL {
         let directory = url.deletingLastPathComponent()
-        let base = url.deletingPathExtension().lastPathComponent
+        let base = url.deletingPathExtension().lastPathComponent + suffix
         let temp = temporarySibling(of: url)
         try bytes.write(to: temp)
         var counter = 1

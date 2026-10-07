@@ -167,3 +167,41 @@ private func size(of data: Data) -> (Int, Int) {
         #expect(urls.map(\.lastPathComponent) == ["a.PNG", "c.webp", "b.txt"])
     }
 }
+
+@Suite struct SettingsOptionsTests {
+    @Test func settingsStoredByAnOlderVersionStillDecode() throws {
+        let old = Data(#"{"level":"smallest","maxSide":1280}"#.utf8)
+        let decoded = try JSONDecoder().decode(OptimizeSettings.self, from: old)
+        #expect(decoded == OptimizeSettings(level: .smallest, format: nil, maxSide: 1280))
+        #expect(decoded.replaceOriginals && !decoded.keepMetadata)
+    }
+
+    @Test func copyModeLeavesTheOriginalAndWritesAnOptimizedCopy() async throws {
+        let dir = tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let file = dir.appendingPathComponent("a.png")
+        let original = Fixtures.png(width: 400, height: 300)
+        try original.write(to: file)
+        try Data("x".utf8).write(to: dir.appendingPathComponent("a-optimized.png"))
+        let settings = OptimizeSettings(level: .balanced, replaceOriginals: false)
+        let result = try await FileJob.run(file, settings: settings)
+        guard case .converted(let output) = result.outcome else { Issue.record("no copy"); return }
+        #expect(output.lastPathComponent == "a-optimized 2.png")
+        #expect(try Data(contentsOf: file) == original)
+        #expect(try Data(contentsOf: dir.appendingPathComponent("a-optimized.png")) == Data("x".utf8))
+    }
+
+    @Test func keepMetadataKeepsGPSAndRemoveDropsIt() async throws {
+        let input = Fixtures.jpeg(gps: true)
+        let kept = try await OptimizeSettings(level: .lossless, keepMetadata: true).process(input)
+        let removed = try await OptimizeSettings(level: .lossless).process(input)
+        #expect(Fixtures.hasGPS(kept.bytes))
+        #expect(!Fixtures.hasGPS(removed.bytes))
+    }
+
+    @Test func processReturnsTheRequestedFormat() async throws {
+        let out = try await OptimizeSettings(level: .balanced, format: .webp).process(Fixtures.png())
+        #expect(out.format == .webp)
+        #expect(ImageFormat.sniff(out.bytes) == .webp)
+    }
+}

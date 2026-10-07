@@ -11,11 +11,46 @@ public struct OptimizeSettings: Equatable, Codable, Sendable {
     public var format: ImageFormat?
     /// Longest side in pixels; nil keeps the original size. Images are only ever shrunk.
     public var maxSide: Int?
+    /// Keep credits, captions and location instead of stripping them (JPEG and PNG; WebP is re-encoded).
+    public var keepMetadata: Bool
+    /// Same-format files are overwritten (true) or written as `name-optimized.ext` (false).
+    public var replaceOriginals: Bool
 
-    public init(level: OptimizeLevel = .balanced, format: ImageFormat? = nil, maxSide: Int? = nil) {
+    public init(
+        level: OptimizeLevel = .balanced, format: ImageFormat? = nil, maxSide: Int? = nil,
+        keepMetadata: Bool = false, replaceOriginals: Bool = true
+    ) {
         self.level = level
         self.format = format
         self.maxSide = maxSide
+        self.keepMetadata = keepMetadata
+        self.replaceOriginals = replaceOriginals
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case level, format, maxSide, keepMetadata, replaceOriginals
+    }
+
+    /// Settings stored by older versions lack the newer keys; those take their defaults.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            level: try c.decodeIfPresent(OptimizeLevel.self, forKey: .level) ?? .balanced,
+            format: try c.decodeIfPresent(ImageFormat.self, forKey: .format),
+            maxSide: try c.decodeIfPresent(Int.self, forKey: .maxSide),
+            keepMetadata: try c.decodeIfPresent(Bool.self, forKey: .keepMetadata) ?? false,
+            replaceOriginals: try c.decodeIfPresent(Bool.self, forKey: .replaceOriginals) ?? true)
+    }
+
+    /// True if `data` is larger than the max size and will therefore be shrunk.
+    func willShrink(_ data: Data) -> Bool {
+        maxSide.map { (FileJob.longestSide(of: data) ?? 0) > $0 } ?? false
+    }
+
+    /// Runs the settings over image bytes (used for screenshots as well as files).
+    public func process(_ data: Data) async throws -> ProcessedImage {
+        guard let inputFormat = ImageFormat.sniff(data) else { throw OptimosError.unsupportedFormat }
+        return try await pipeline(inputFormat: inputFormat, willShrink: willShrink(data)).run(data)
     }
 
     /// Encoder options for one output format.
@@ -41,7 +76,7 @@ public struct OptimizeSettings: Equatable, Codable, Sendable {
         if willShrink, let maxSide {
             operations.append(Resize(.fit(maxWidth: maxSide, maxHeight: maxSide)))
         }
-        operations.append(StripMetadata())
+        if !keepMetadata { operations.append(StripMetadata()) }
         operations.append(Optimize())
         return Pipeline(
             operations: operations,
