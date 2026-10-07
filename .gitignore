@@ -8,3 +8,10 @@ App/build/
 App/Config/Local.xcconfig
 xcuserdata/
 App/dist/
+
+# AI assistant files and working documents (kept locally, not part of the project)
+.claude/
+CLAUDE.md
+.superpowers/
+docs/superpowers/
+

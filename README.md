@@ -10,7 +10,7 @@ A macOS menu-bar app (macOS 14+, Apple silicon) to capture, annotate, optimize a
 # OptimosApp — Capture. Optimize. Convert.
 
 This repository currently holds `OptimosCore` (image pipeline) and the `optimos` CLI.
-See `PRD.md` and `docs/superpowers/` for the product definition, specs and plans.
+See `PRD.md` for the product definition and `docs/` for the manual test checklists and the security review. Version history is in `CHANGELOG.md`.
 
 ## Build prerequisites (macOS 14+, Apple Silicon)
 
@@ -69,4 +69,7 @@ macOS ties the Screen Recording permission to the app's code signature. Ad-hoc s
 
 ## Website
 `website/` holds the static landing page (Next.js static export, Tailwind, shadcn/ui and shadcnspace blocks). `cd website && pnpm install && pnpm build` writes the plain HTML site to `website/out`. See `website/README.md`; release links live in `website/lib/site.ts`.
+
+## Contributing and security
+Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). To report a vulnerability, see [SECURITY.md](SECURITY.md). The project is released under the [MIT License](LICENSE).
 

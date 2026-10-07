@@ -1,4 +1,7 @@
-import { ArrowUpRight, ChevronsUpDown, Clipboard, Download, MousePointer2, Share, Square, Type, X, Grid3x3 } from "lucide-react";
+import {
+  ArrowUpRight, ChevronsUpDown, Circle, Clipboard, Download, Droplet, Grid3x3, Hash, Highlighter, Minus,
+  MousePointer2, Share, Square, Type, X,
+} from "lucide-react";
 import { Desktop } from "./Desktop";
 
 const colors = ["bg-red-500", "bg-orange-500", "bg-yellow-400", "bg-green-500", "bg-blue-500", "bg-white"];
@@ -28,7 +31,7 @@ export function CaptureMockup({ annotated = false }: { annotated?: boolean }) {
 
       <div className="absolute left-[12%] top-[62%] w-[min(88%,420px)] rounded-lg border border-white/15 bg-neutral-800/90 p-2 text-white shadow-xl backdrop-blur">
         <div className="flex flex-wrap items-center gap-1.5 border-b border-white/15 pb-1.5">
-          {[MousePointer2, Square, ArrowUpRight, Type, Grid3x3].map((Icon, i) => (
+          {[MousePointer2, Square, Circle, ArrowUpRight, Minus, Type, Highlighter, Hash, Grid3x3, Droplet].map((Icon, i) => (
             <span key={i} className={`flex size-5 items-center justify-center rounded ${i === 1 ? "bg-white/25" : ""}`}>
               <Icon size={12} />
             </span>

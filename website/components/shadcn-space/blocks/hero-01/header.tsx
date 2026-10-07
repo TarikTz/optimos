@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import Logo from "@/assets/logo/logo";
 import { Button } from "@/components/ui/button";
-import { motion } from "motion/react";
 import { SITE } from "@/lib/site";
 
 export type NavigationSection = {
@@ -55,12 +54,11 @@ const Header = ({ navigationData, className }: HeaderProps) => {
   }, [handleScroll, handleResize]);
 
   return (
-    <motion.header
-      initial={{ opacity: 0, y: -32 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.7, ease: "easeInOut" }}
-      className={cn("inset-x-0 z-50 px-4 flex items-center justify-center sticky top-0 h-20", className)}
+    <header
+      className={cn(
+        "inset-x-0 z-50 px-4 flex items-center justify-center sticky top-0 h-20 animate-in fade-in duration-700",
+        className,
+      )}
     >
       <div
         className={cn(
@@ -128,7 +126,7 @@ const Header = ({ navigationData, className }: HeaderProps) => {
           </div>
         </div>
       </div>
-    </motion.header>
+    </header>
   );
 };
 

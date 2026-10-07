@@ -1,8 +1,6 @@
-"use client";
 
 import { Instrument_Serif } from "next/font/google";
 import { Button } from "@/components/ui/button";
-import { motion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 import { SITE } from "@/lib/site";
 import { CaptureMockup } from "@/components/mockups/CaptureMockup";
@@ -16,31 +14,16 @@ export default function HeroSection() {
         <div className="container mx-auto relative z-10 px-4">
           <div className="flex flex-col max-w-5xl mx-auto gap-10">
             <div className="relative flex flex-col text-center items-center sm:gap-6 gap-4">
-              <motion.h1
-                initial={{ opacity: 0, y: 32 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, ease: "easeInOut" }}
-                className="lg:text-8xl md:text-7xl text-5xl font-medium leading-[1.05]"
-              >
+              <h1 className="lg:text-8xl md:text-7xl text-5xl font-medium leading-[1.05]">
                 Capture. Optimize.{" "}
                 <span className={`${instrumentSerif.className} tracking-tight`}>Convert.</span>
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 32 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.1, ease: "easeInOut" }}
-                className="text-lg font-normal max-w-2xl text-muted-foreground"
-              >
+              </h1>
+              <p className="text-lg font-normal max-w-2xl text-muted-foreground">
                 Screenshots in one shortcut, marked up and shrunk before they leave your Mac. Drop in any image
                 to make it smaller or turn it into WebP. Free and open source.
-              </motion.p>
+              </p>
             </div>
-            <motion.div
-              initial={{ opacity: 0, y: 32 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.2, ease: "easeInOut" }}
-              className="flex items-center flex-col gap-3"
-            >
+            <div className="flex items-center flex-col gap-3">
               <Button
                 render={<a href={SITE.downloadUrl} />}
                 nativeButton={false}
@@ -54,14 +37,10 @@ export default function HeroSection() {
               <p className="text-sm text-muted-foreground">
                 Version {SITE.version} · {SITE.requirements} · Free, MIT license
               </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 48 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.35, ease: "easeInOut" }}
-            >
+            </div>
+            <div className="animate-in fade-in slide-in-from-bottom-6 duration-1000">
               <CaptureMockup annotated />
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
