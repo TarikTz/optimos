@@ -48,3 +48,7 @@ relaunch the app, and grant access again. To avoid this, create `App/Config/Loca
 
 These avoid macOS's own `⌘⇧3/4/5` so they work on first launch. Manual verification steps are in
 `docs/manual-checks/capture-app.md`.
+
+### Optimize Images window
+**Optimize Images…** in the menu-bar menu opens a window. Drop images or folders (or use `+`) and they are optimized at once with the **Level** (Lossless, Balanced, Smallest), **Format** (keep, PNG, JPEG, WebP) and **Max size** (fit the longest side, never enlarging) shown in the bottom bar. Same-format files are replaced in place, and only if the result is smaller. Converted files are written next to the original with the new extension. **Undo** restores the originals and **Again** re-runs from them with the current settings; the backups are deleted when the window closes.
+

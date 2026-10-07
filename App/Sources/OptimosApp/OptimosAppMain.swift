@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hotkeys = HotkeyManager()
     private var menuBar: MenuBarController?
     private var coordinator: CaptureCoordinator?
+    private let optimizerWindow = OptimizerWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Unit tests load the app as a host; do not register hotkeys or show UI there.
@@ -29,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             saveLocation: saveLocation)
         let menuBar = MenuBarController(permission: permission, saveLocation: saveLocation)
         menuBar.onAction = { coordinator.perform($0) }
+        menuBar.onOpenOptimizer = { [optimizerWindow] in optimizerWindow.show() }
         hotkeys.onAction = { coordinator.perform($0) }
         menuBar.setFailedHotkeys(hotkeys.register(Hotkey.defaults))
         self.coordinator = coordinator
