@@ -20,8 +20,11 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         self.saveLocation = saveLocation
         self.hotkeys = hotkeys
         super.init()
-        statusItem.button?.image = NSImage(
-            systemSymbolName: "camera.viewfinder", accessibilityDescription: "OptimosApp")
+        let icon = NSImage(named: "MenuBarIcon")
+        icon?.isTemplate = true
+        statusItem.button?.image = icon
+            ?? NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "OptimosApp")
+        statusItem.button?.image?.accessibilityDescription = "OptimosApp"
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu

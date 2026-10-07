@@ -51,10 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 })
         })
         menuBar.onOpenPreferences = { preferences.show() }
-        menuBar.onAbout = {
-            NSApp.activate(ignoringOtherApps: true)
-            NSApp.orderFrontStandardAboutPanel(nil)
-        }
+        menuBar.onAbout = { AboutPanel.show() }
         preferencesWindow = preferences
         self.coordinator = coordinator
         self.menuBar = menuBar

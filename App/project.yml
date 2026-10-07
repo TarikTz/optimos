@@ -30,12 +30,18 @@ targets:
         CFBundleDisplayName: OptimosApp
         LSUIElement: true
         LSMinimumSystemVersion: "14.0"
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSHumanReadableCopyright: "© 2026 Tarik Omercehajic. Released under the MIT License."
         NSScreenCaptureUsageDescription: OptimosApp captures the screen only when you press a capture shortcut. Images are processed on your Mac and never uploaded.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.optimos.OptimosApp
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
   OptimosAppTests:
     type: bundle.unit-test
     platform: macOS

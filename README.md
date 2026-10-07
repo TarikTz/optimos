@@ -1,3 +1,12 @@
+<p align="center">
+  <img src="App/Resources/Branding/optimos-icon-1024.png" width="128" alt="OptimosApp icon">
+</p>
+
+<h1 align="center">OptimosApp</h1>
+<p align="center"><em>Capture. Optimize. Convert.</em></p>
+
+A macOS menu-bar app (macOS 14+, Apple silicon) to capture, annotate, optimize and convert images, plus the `optimos` command-line tool and the `OptimosCore` library behind them. By Tarik Omercehajic, released under the [MIT License](LICENSE); third-party components are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
 # OptimosApp — Capture. Optimize. Convert.
 
 This repository currently holds `OptimosCore` (image pipeline) and the `optimos` CLI.

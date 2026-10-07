@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <title>Optimos app icon</title>
+  <defs>
+    <linearGradient id="tile" x1="200" y1="100" x2="824" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2D6BFF"/>
+      <stop offset="1" stop-color="#14C2B3"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="512" y1="100" x2="512" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFC24A"/>
+      <stop offset="1" stop-color="#FF8A1F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tile -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tile)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#sheen)"/>
+
+  <g transform="translate(24 24) scale(2)">
+    <!-- Frame corners -->
+    <path d="M112 178V142C112 125.431 125.431 112 142 112H188" stroke="#FFF" stroke-width="28" stroke-linecap="round"/>
+    <path d="M324 400H370C386.569 400 400 386.569 400 370V324" stroke="#FFF" stroke-width="28" stroke-linecap="round"/>
+    <!-- Mountain and sun, nudged right so the arrow does not touch them -->
+    <g transform="translate(30 -6)">
+      <path d="M160 342L225 245C232.286 234.114 248.202 234.114 255.488 245L318 342H160Z" fill="#FFF"/>
+      <path d="M255 342L286 296L327 342H255Z" fill="#CFF3FF"/>
+      <circle cx="298" cy="226" r="24" fill="url(#sun)"/>
+    </g>
+    <!-- Inward arrows -->
+    <path d="M385 88L332 141M332 141V106M332 141H367" stroke="#FFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M127 392L180 339M180 339V374M180 339H145" stroke="#FFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
