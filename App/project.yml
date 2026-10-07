@@ -29,7 +29,7 @@ targets:
         CFBundleName: OptimosApp
         CFBundleDisplayName: OptimosApp
         LSUIElement: true
-        LSMinimumSystemVersion: "14.0"
+        LSMinimumSystemVersion: "26.0"
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSHumanReadableCopyright: "© 2026 Tarik Omercehajic. Released under the MIT License."

@@ -7,3 +7,4 @@ App/OptimosApp.xcodeproj/
 App/build/
 App/Config/Local.xcconfig
 xcuserdata/
+App/dist/
