@@ -29,9 +29,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             permission: permission, toast: ToastPresenter(), overlay: SelectionOverlayController(),
             saveLocation: saveLocation)
         let menuBar = MenuBarController(permission: permission, saveLocation: saveLocation)
-        menuBar.onAction = { coordinator.perform($0) }
-        menuBar.onOpenOptimizer = { [optimizerWindow] in optimizerWindow.show() }
-        hotkeys.onAction = { coordinator.perform($0) }
+        let route: (HotkeyAction) -> Void = { [optimizerWindow] action in
+            if action == .openOptimizer { optimizerWindow.show() } else { coordinator.perform(action) }
+        }
+        menuBar.onAction = route
+        hotkeys.onAction = route
         menuBar.setFailedHotkeys(hotkeys.register(Hotkey.defaults))
         self.coordinator = coordinator
         self.menuBar = menuBar

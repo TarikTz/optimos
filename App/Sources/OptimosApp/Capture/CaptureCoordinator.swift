@@ -51,6 +51,7 @@ final class CaptureCoordinator {
             switch action {
             case .captureScreen: try await captureScreen()
             case .captureArea: try await captureArea()
+            case .openOptimizer: break  // handled by the app delegate, not a capture
             }
         } catch {
             toast.show("Capture failed: \(ErrorMessage.text(for: error))", isWarning: true, duration: 4)

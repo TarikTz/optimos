@@ -24,3 +24,10 @@ Open **Optimize Images…** from the menu-bar menu. Use copies of real images, n
 15. [ ] Close the window, then open it again. Expected: an empty list. The earlier files stay as they were (no Undo any more).
 16. [ ] Put a file in a read-only folder and drop it. Expected: the row shows an error, other rows continue.
 17. [ ] Quit and relaunch: Level, Format and Max size are remembered.
+
+## Finding the window again
+18. [ ] Press `⌃⌥⌘O` from any app. Expected: the optimizer window opens in front. Press it again while the window is hidden behind other apps: it comes to the front.
+19. [ ] With the window open, click another app so the window is hidden. Expected: OptimosApp shows a Dock icon and appears in Cmd-Tab; Cmd-Tab (or the Dock icon) brings the window back.
+20. [ ] Close the window. Expected: the Dock icon and Cmd-Tab entry disappear again; the menu-bar icon and capture shortcuts still work.
+21. [ ] With the window open, use `⌃⌥⌘4`: the capture overlay works as before.
+

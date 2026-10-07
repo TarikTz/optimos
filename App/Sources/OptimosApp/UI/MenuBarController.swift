@@ -3,7 +3,6 @@ import AppKit
 @MainActor
 final class MenuBarController: NSObject, NSMenuDelegate {
     var onAction: ((HotkeyAction) -> Void)?
-    var onOpenOptimizer: (() -> Void)?
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let permission: PermissionService
@@ -46,11 +45,6 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             item.representedObject = NSNumber(value: action.rawValue)
             menu.addItem(item)
         }
-
-        menu.addItem(.separator())
-        let optimize = NSMenuItem(title: "Optimize Images…", action: #selector(openOptimizer), keyEquivalent: "")
-        optimize.target = self
-        menu.addItem(optimize)
 
         menu.addItem(.separator())
         let asks = NSMenuItem(
@@ -109,8 +103,6 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         else { return }
         onAction?(action)
     }
-
-    @objc private func openOptimizer() { onOpenOptimizer?() }
 
     @objc private func toggleAsk() {
         saveLocation.setAsksWhereToSave(!saveLocation.asksWhereToSave)
