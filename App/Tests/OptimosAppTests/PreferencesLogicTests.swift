@@ -1,3 +1,4 @@
+import AppKit
 import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
@@ -121,5 +122,14 @@ private func isolatedDefaults() -> (UserDefaults, () -> Void) {
         guard case .file(let url) = saved.destination else { Issue.record("no file"); return }
         #expect(url.pathExtension == "png")
         #expect(saved.warning != nil)
+    }
+}
+
+@Suite struct HotkeyRecordingTests {
+    @Test func buildsAShortcutFromAKeyPressAndIgnoresEscape() {
+        let key = Hotkey.from(keyCode: UInt16(kVK_ANSI_K), flags: [.control, .command], characters: "k")
+        #expect(key?.displayString == "⌃⌘K")
+        #expect(Hotkey.from(keyCode: 53, flags: [.command], characters: nil) == nil)
+        #expect(Hotkey.from(keyCode: 49, flags: [.option], characters: " ")?.displayString == "⌥Space")
     }
 }

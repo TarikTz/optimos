@@ -1,3 +1,4 @@
+import AppKit
 import Carbon.HIToolbox
 import Foundation
 
@@ -28,6 +29,19 @@ struct Hotkey: Equatable, Sendable, Codable {
         if modifiers & UInt32(shiftKey) != 0 { text += "⇧" }
         if modifiers & UInt32(cmdKey) != 0 { text += "⌘" }
         return text + keyLabel
+    }
+
+    /// Builds a shortcut from a key press (nil for Esc, which cancels recording).
+    static func from(keyCode: UInt16, flags: NSEvent.ModifierFlags, characters: String?) -> Hotkey? {
+        guard keyCode != 53 else { return nil }
+        var modifiers: UInt32 = 0
+        if flags.contains(.control) { modifiers |= UInt32(controlKey) }
+        if flags.contains(.option) { modifiers |= UInt32(optionKey) }
+        if flags.contains(.shift) { modifiers |= UInt32(shiftKey) }
+        if flags.contains(.command) { modifiers |= UInt32(cmdKey) }
+        let names: [UInt16: String] = [49: "Space", 36: "↩", 48: "⇥", 51: "⌫", 123: "←", 124: "→", 125: "↓", 126: "↑"]
+        let label = names[keyCode] ?? characters?.uppercased().trimmingCharacters(in: .whitespaces)
+        return Hotkey(keyCode: UInt32(keyCode), modifiers: modifiers, keyLabel: label?.isEmpty == false ? label! : "Key \(keyCode)")
     }
 
     private static let controlOptionCommand = UInt32(controlKey | optionKey | cmdKey)

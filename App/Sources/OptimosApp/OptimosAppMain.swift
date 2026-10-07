@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBar: MenuBarController?
     private var coordinator: CaptureCoordinator?
     private let optimizerWindow = OptimizerWindowController()
+    private var preferencesWindow: PreferencesWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Unit tests load the app as a host; do not register hotkeys or show UI there.
@@ -31,13 +32,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 captureSettings: { (captureSettings.format, captureSettings.level) }),
             permission: permission, toast: ToastPresenter(), overlay: SelectionOverlayController(),
             saveLocation: saveLocation, captureSettings: captureSettings)
-        let menuBar = MenuBarController(permission: permission, saveLocation: saveLocation)
+        let hotkeyStore = HotkeyStore()
+        let menuBar = MenuBarController(
+            permission: permission, saveLocation: saveLocation, hotkeys: { hotkeyStore.table })
         let route: (HotkeyAction) -> Void = { [optimizerWindow] action in
             if action == .openOptimizer { optimizerWindow.show() } else { coordinator.perform(action) }
         }
         menuBar.onAction = route
         hotkeys.onAction = route
-        menuBar.setFailedHotkeys(hotkeys.register(Hotkey.defaults))
+        menuBar.setFailedHotkeys(hotkeys.register(hotkeyStore.table))
+        let preferences = PreferencesWindowController(makeModel: { [hotkeys] in
+            PreferencesModel(
+                saveLocation: saveLocation, captureStore: captureSettings, hotkeyStore: hotkeyStore,
+                applyHotkeys: { table in
+                    let failed = hotkeys.register(table)
+                    menuBar.setFailedHotkeys(failed)
+                    return failed
+                })
+        })
+        menuBar.onOpenPreferences = { preferences.show() }
+        menuBar.onAbout = {
+            NSApp.activate(ignoringOtherApps: true)
+            NSApp.orderFrontStandardAboutPanel(nil)
+        }
+        preferencesWindow = preferences
         self.coordinator = coordinator
         self.menuBar = menuBar
     }

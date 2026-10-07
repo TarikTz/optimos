@@ -3,16 +3,18 @@ import AppKit
 @MainActor
 final class MenuBarController: NSObject, NSMenuDelegate {
     var onAction: ((HotkeyAction) -> Void)?
+    var onOpenPreferences: (() -> Void)?
+    var onAbout: (() -> Void)?
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let permission: PermissionService
     private let saveLocation: SaveLocationStore
-    private let hotkeys: [HotkeyAction: Hotkey]
+    private let hotkeys: () -> [HotkeyAction: Hotkey]
     private var failedHotkeys: [HotkeyAction] = []
 
     init(
         permission: PermissionService, saveLocation: SaveLocationStore,
-        hotkeys: [HotkeyAction: Hotkey] = Hotkey.defaults
+        hotkeys: @escaping () -> [HotkeyAction: Hotkey] = { Hotkey.defaults }
     ) {
         self.permission = permission
         self.saveLocation = saveLocation
@@ -38,7 +40,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     private func rebuild(_ menu: NSMenu) {
         menu.removeAllItems()
         for action in HotkeyAction.allCases {
-            let shortcut = hotkeys[action]?.displayString ?? ""
+            let shortcut = hotkeys()[action]?.displayString ?? ""
             let item = NSMenuItem(
                 title: "\(action.menuTitle)    \(shortcut)", action: #selector(capture(_:)), keyEquivalent: "")
             item.target = self
@@ -47,21 +49,6 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
-        let asks = NSMenuItem(
-            title: "Ask Where to Save Each Time", action: #selector(toggleAsk), keyEquivalent: "")
-        asks.target = self
-        asks.state = saveLocation.asksWhereToSave ? .on : .off
-        menu.addItem(asks)
-        let current = NSMenuItem(
-            title: saveLocation.asksWhereToSave
-                ? "Save panel starts in: \(saveLocation.displayPath)"
-                : "Autosaving to: \(saveLocation.displayPath)",
-            action: nil, keyEquivalent: "")
-        current.isEnabled = false
-        menu.addItem(current)
-        let choose = NSMenuItem(title: "Save Location…", action: #selector(chooseSaveLocation), keyEquivalent: "")
-        choose.target = self
-        menu.addItem(choose)
         let reveal = NSMenuItem(
             title: "Show Last Screenshot in Finder", action: #selector(revealLastScreenshot), keyEquivalent: "")
         reveal.target = self
@@ -85,12 +72,19 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             menu.addItem(item)
         }
         for action in failedHotkeys {
-            let shortcut = hotkeys[action]?.displayString ?? ""
+            let shortcut = hotkeys()[action]?.displayString ?? ""
             let item = NSMenuItem(
                 title: "⚠︎ \(shortcut) could not be registered", action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
         }
+        menu.addItem(.separator())
+        let prefs = NSMenuItem(title: "Preferences…", action: #selector(openPreferences), keyEquivalent: ",")
+        prefs.target = self
+        menu.addItem(prefs)
+        let about = NSMenuItem(title: "About OptimosApp", action: #selector(showAbout), keyEquivalent: "")
+        about.target = self
+        menu.addItem(about)
         menu.addItem(.separator())
         let quit = NSMenuItem(title: "Quit OptimosApp", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
@@ -104,26 +98,8 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         onAction?(action)
     }
 
-    @objc private func toggleAsk() {
-        saveLocation.setAsksWhereToSave(!saveLocation.asksWhereToSave)
-        if let menu = statusItem.menu { rebuild(menu) }
-    }
-
-    @objc private func chooseSaveLocation() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.canCreateDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.prompt = "Choose"
-        panel.message = "Choose the folder where screenshots are saved."
-        panel.directoryURL = saveLocation.directory
-        // An accessory app is not frontmost by default, and the panel would open behind other windows.
-        NSApp.activate(ignoringOtherApps: true)
-        guard panel.runModal() == .OK, let url = panel.url else { return }  // cancelled: nothing changes
-        saveLocation.setDirectory(url)
-        if let menu = statusItem.menu { rebuild(menu) }
-    }
+    @objc private func openPreferences() { onOpenPreferences?() }
+    @objc private func showAbout() { onAbout?() }
 
     @objc private func revealLastScreenshot() {
         guard let last = saveLocation.lastSavedFile else { return }

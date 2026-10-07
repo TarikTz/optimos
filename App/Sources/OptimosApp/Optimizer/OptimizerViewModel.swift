@@ -21,25 +21,28 @@ struct OptimizerRow: Identifiable, Equatable {
 @MainActor
 @Observable
 final class OptimizerViewModel {
-    private static let settingsKey = "optimizerSettings"
     private static let concurrency = 3
 
     private(set) var rows: [OptimizerRow] = []
     var settings: OptimizeSettings {
-        didSet { Self.save(settings, to: defaults) }
+        didSet { store.settings = settings }
     }
     private(set) var isWorking = false
 
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let store: OptimizerSettingsStore
     @ObservationIgnored private let backups: BackupStore
     @ObservationIgnored private var runTask: Task<Void, Never>?
 
     init(defaults: UserDefaults = .standard, backups: BackupStore = BackupStore()) {
-        self.defaults = defaults
+        self.store = OptimizerSettingsStore(defaults: defaults)
         self.backups = backups
-        self.settings =
-            defaults.data(forKey: Self.settingsKey).flatMap { try? JSONDecoder().decode(OptimizeSettings.self, from: $0) }
-            ?? OptimizeSettings()
+        self.settings = store.settings
+    }
+
+    /// Picks up changes made in Preferences while this window was in the background.
+    func reloadSettings() {
+        let stored = store.settings
+        if stored != settings { settings = stored }
     }
 
     var canUndo: Bool {
@@ -122,9 +125,5 @@ final class OptimizerViewModel {
             status = .failed(ErrorMessage.text(for: error))
         }
         if let current = rows.firstIndex(where: { $0.id == id }) { rows[current].status = status }
-    }
-
-    private static func save(_ settings: OptimizeSettings, to defaults: UserDefaults) {
-        if let data = try? JSONEncoder().encode(settings) { defaults.set(data, forKey: settingsKey) }
     }
 }

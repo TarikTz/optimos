@@ -8,9 +8,6 @@ final class OptimizerWindowController: NSObject, NSWindowDelegate {
     private var model: OptimizerViewModel?
 
     func show() {
-        // A menu-bar-only app has no Dock icon or Cmd-Tab entry, so its window would get lost behind
-        // other apps. While the window is open the app behaves like a normal app.
-        NSApp.setActivationPolicy(.regular)
         if let window {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
@@ -27,14 +24,20 @@ final class OptimizerWindowController: NSObject, NSWindowDelegate {
         window.center()
         self.model = model
         self.window = window
+        AppPresence.windowOpened()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Preferences may have changed the shared settings while another window was in front.
+    func windowDidBecomeKey(_ notification: Notification) {
+        model?.reloadSettings()
     }
 
     func windowWillClose(_ notification: Notification) {
         model?.close()
         model = nil
         window = nil
-        NSApp.setActivationPolicy(.accessory)
+        AppPresence.windowClosed()
     }
 }
