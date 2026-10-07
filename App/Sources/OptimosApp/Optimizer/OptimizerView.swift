@@ -79,7 +79,7 @@ private struct OptimizerBar: View {
     @Bindable var model: OptimizerViewModel
     @State private var customText = ""
 
-    private static let presets = [3840, 2560, 1920, 1280, 800]
+    private static let presets = MaxSizePresets.sides
 
     var body: some View {
         HStack(spacing: 14) {

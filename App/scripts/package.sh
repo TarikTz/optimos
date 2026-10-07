@@ -80,7 +80,9 @@ OFFER
 
 echo "==> Signing with: $SIGN_ID"
 for f in "$RES"/lib/* "$RES"/tools/*; do codesign --force --sign "$SIGN_ID" "$f" > /dev/null 2>&1; done
-codesign --force --deep --sign "$SIGN_ID" "$APP" > /dev/null 2>&1
+# Hardened runtime stops other programs from injecting code into the app (DYLD_INSERT_LIBRARIES),
+# which would otherwise inherit its Screen Recording permission.
+codesign --force --deep -o runtime --sign "$SIGN_ID" "$APP" > /dev/null 2>&1
 codesign --verify --deep --strict "$APP"
 
 echo "==> Smoke test: the bundled tools run with no Homebrew on the PATH"

@@ -30,6 +30,7 @@ enum ConvertibleInput {
         } else {
             return nil
         }
+        try ImageLimits.check(data)
         guard let first = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
             throw OptimosError.decodeFailed("could not read the image")
         }

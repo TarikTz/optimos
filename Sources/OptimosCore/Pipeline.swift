@@ -50,6 +50,7 @@ public struct Pipeline: Sendable {
             throw OptimosError.invalidOptions("quality must be between 1 and 100")
         }
         guard let inFormat = ImageFormat.sniff(input) else { throw OptimosError.unsupportedFormat }
+        try ImageLimits.check(input)
         try checkCancelled()
         var image = try Codecs.codec(for: inFormat).decode(input)
         for operation in operations {

@@ -7,6 +7,7 @@ public final class BackupStore: @unchecked Sendable {
     private let lock = NSLock()
     private var backups: [(original: URL, copy: URL)] = []
     private var created: [URL] = []
+    private var isClosed = false
 
     public init(directory: URL = FileManager.default.temporaryDirectory
         .appendingPathComponent("OptimosBackups-\(UUID().uuidString)", isDirectory: true)
@@ -18,6 +19,9 @@ public final class BackupStore: @unchecked Sendable {
     public func backUp(_ url: URL) throws {
         lock.lock()
         defer { lock.unlock() }
+        // After the session ended no new backup may appear (a late job would leave an orphan folder);
+        // the caller's willReplace then throws and the file is left untouched.
+        guard !isClosed else { throw CocoaError(.userCancelled) }
         let key = url.standardizedFileURL.path
         guard !backups.contains(where: { $0.original.standardizedFileURL.path == key }) else { return }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -58,6 +62,7 @@ public final class BackupStore: @unchecked Sendable {
     public func deleteAll() {
         lock.lock()
         defer { lock.unlock() }
+        isClosed = true
         try? FileManager.default.removeItem(at: directory)
         backups = []
         created = []

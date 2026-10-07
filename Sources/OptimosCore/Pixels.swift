@@ -76,11 +76,16 @@ enum Pixels {
         case .none, .noneSkipFirst, .noneSkipLast: return false
         default: break
         }
-        guard let rgba = try? premultipliedRGBA(image) else { return false }
-        var i = 3
-        while i < rgba.count {
-            if rgba[i] != 255 { return true }
-            i += 4
+        // Draw into an alpha-only bitmap: one byte per pixel instead of a full RGBA copy.
+        guard let ctx = CGContext(
+            data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue),
+            let base = ctx.data?.assumingMemoryBound(to: UInt8.self)
+        else { return false }
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        for y in 0..<image.height {
+            let row = base + y * ctx.bytesPerRow
+            for x in 0..<image.width where row[x] != 255 { return true }
         }
         return false
     }

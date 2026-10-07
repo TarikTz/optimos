@@ -13,6 +13,7 @@ struct WebPCodec: Codec {
             throw OptimosError.decodeFailed("libwebp rejected the data (status \(status.rawValue))")
         }
         if features.has_animation != 0 { throw OptimosError.unsupportedFormat }
+        try ImageLimits.check(width: Int(features.width), height: Int(features.height))
 
         let decoded = try Self.straightRGBA(data)
         let image = try Pixels.image(straightRGBA: decoded.pixels, width: decoded.width, height: decoded.height)

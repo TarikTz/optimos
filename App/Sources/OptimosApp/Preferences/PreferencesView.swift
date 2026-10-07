@@ -71,7 +71,7 @@ struct PreferencesView: View {
         .formStyle(.grouped)
     }
 
-    private static let sizes = [3840, 2560, 1920, 1280, 800]
+    private static let sizes = MaxSizePresets.sides
 
     private var optimizer: some View {
         Form {

@@ -129,6 +129,11 @@ final class CaptureCoordinator {
         case .share:
             let file = try await output.exportForSharing(image, choice: outcome.output)
             sharePresenter.share(file, near: Self.screenRect(of: outcome.toolbarFrame, on: display.info.id))
+            // The file is a private copy for the share menu; remove it once any transfer has had time to finish.
+            Task {
+                try? await Task.sleep(for: .seconds(900))
+                try? FileManager.default.removeItem(at: file)
+            }
         }
     }
 

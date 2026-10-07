@@ -14,13 +14,32 @@ struct ExternalTool: Sendable {
         self.searchPaths = searchPaths
     }
 
+    /// Inside the app the bundled tools come first and the environment variable is ignored, so
+    /// nothing launching the app can swap in its own tools (they would inherit its permissions).
+    /// Outside an app bundle (the CLI, tests, a debug build) the variable and Homebrew are honoured.
     static var defaultSearchPaths: [String] {
+        let bundled = Bundle.main.resourceURL?.appendingPathComponent("tools").path
+        if Bundle.main.bundlePath.hasSuffix(".app"), let bundled,
+            FileManager.default.fileExists(atPath: bundled)
+        {
+            return [bundled]
+        }
         var paths: [String] = []
-        if let dir = toolsDirectory(from: ProcessInfo.processInfo.environment) { paths.append(dir) }
-        if let res = Bundle.main.resourceURL?.appendingPathComponent("tools").path { paths.append(res) }
-        paths += ["/opt/homebrew/bin", "/opt/homebrew/opt/libjpeg-turbo/bin", "/usr/local/bin"]
+        if !Bundle.main.bundlePath.hasSuffix(".app"),
+            let dir = toolsDirectory(from: ProcessInfo.processInfo.environment)
+        {
+            paths.append(dir)
+        }
+        if let bundled { paths.append(bundled) }
+        paths += ["/opt/homebrew/bin", "/opt/homebrew/opt/jpeg-turbo/bin", "/opt/homebrew/opt/libjpeg-turbo/bin"]
         return paths
     }
+
+    /// Tools get a clean environment: no inherited DYLD_* variables or other surprises.
+    static let cleanEnvironment = ["PATH": "/usr/bin:/bin", "LC_ALL": "C"]
+
+    /// A tool that runs longer than this is stopped (a corrupt image can make one spin).
+    static let defaultTimeout: TimeInterval = 120
 
     /// OPTIMOS_TOOLS_DIR, ignored unless it is an absolute path (empty or relative would mean the cwd).
     static func toolsDirectory(from environment: [String: String]) -> String? {
@@ -42,10 +61,11 @@ struct ExternalTool: Sendable {
         throw OptimosError.toolMissing(name)
     }
 
-    func run(_ arguments: [String], input: Data) throws -> Result {
+    func run(_ arguments: [String], input: Data, timeout: TimeInterval = ExternalTool.defaultTimeout) throws -> Result {
         let process = Process()
         process.executableURL = try locate()
         process.arguments = arguments
+        process.environment = Self.cleanEnvironment
         let stdin = Pipe(), stdout = Pipe(), stderr = Pipe()
         // Per-fd (not process-wide): a tool that exits early yields EPIPE instead of SIGPIPE.
         _ = fcntl(stdin.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
@@ -74,8 +94,24 @@ struct ExternalTool: Sendable {
             try? stdin.fileHandleForWriting.write(contentsOf: input)
             try? stdin.fileHandleForWriting.close()
         }
+        // Poll instead of blocking so cancelling the calling task, or a hung tool, can stop the process.
+        let started = Date()
+        var stopped: OptimosError?
+        while process.isRunning {
+            if Task.isCancelled {
+                stopped = .cancelled
+            } else if Date().timeIntervalSince(started) > timeout {
+                stopped = .encodeFailed("\(name) timed out after \(Int(timeout)) seconds")
+            }
+            if stopped != nil {
+                process.terminate()
+                break
+            }
+            usleep(20_000)
+        }
         process.waitUntilExit()
         group.wait()
+        if let stopped { throw stopped }
         return Result(
             status: process.terminationStatus, output: output.value,
             errorOutput: String(decoding: errors.value, as: UTF8.self))

@@ -28,7 +28,9 @@ public enum FileJob {
     public static func run(
         _ url: URL, settings: OptimizeSettings, willReplace: @Sendable (URL) throws -> Void = { _ in }
     ) async throws -> FileJobResult {
-        let original = try Data(contentsOf: url)
+        // A symlinked file is updated where it really lives, so the link stays a link.
+        let target = url.resolvingSymlinksInPath()
+        let original = try Data(contentsOf: target)
         var input = original
         var settings = settings
         var inputFormat: ImageFormat
@@ -58,8 +60,8 @@ public enum FileJob {
                     source: url, outcome: .converted(output: output), originalBytes: original.count,
                     newBytes: result.newSize)
             }
-            try willReplace(url)
-            try replace(url, with: result.bytes)
+            try willReplace(target)
+            try replace(target, with: result.bytes)
             return FileJobResult(
                 source: url, outcome: .replaced, originalBytes: original.count, newBytes: result.newSize)
         }

@@ -42,7 +42,7 @@ final class OverlayToolbar: NSVisualEffectView {
     private var sizeButtons: [AnnotationSize: NSButton] = [:]
     private let formatPopup = NSPopUpButton(frame: .zero, pullsDown: false)
     private let sizePopup = NSPopUpButton(frame: .zero, pullsDown: false)
-    private static let maxSides: [Int?] = [nil, 3840, 2560, 1920, 1280, 800]
+    private static let maxSides: [Int?] = [nil] + MaxSizePresets.sides
     private static let formats: [ImageFormat] = [.png, .jpeg, .webp]
     private var tool: AnnotationTool
     private var color: AnnotationColor
