@@ -3,73 +3,119 @@
 </p>
 
 <h1 align="center">OptimosApp</h1>
+
 <p align="center"><em>Capture. Optimize. Convert.</em></p>
 
-A macOS menu-bar app (macOS 14+, Apple silicon) to capture, annotate, optimize and convert images, plus the `optimos` command-line tool and the `OptimosCore` library behind them. By Tarik Omercehajic, released under the [MIT License](LICENSE); third-party components are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+<p align="center">
+  <a href="CHANGELOG.md"><img alt="Version 0.2.1" src="https://img.shields.io/badge/version-0.2.1-2D6BFF"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-brightgreen"></a>
+  <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B%20%C2%B7%20Apple%20silicon-black?logo=apple&logoColor=white">
+  <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
+  <a href="https://optimos.075codes.com"><img alt="Website" src="https://img.shields.io/badge/website-optimos.075codes.com-14C2B3"></a>
+</p>
 
-# OptimosApp — Capture. Optimize. Convert.
+OptimosApp is a free Mac app that lives in your menu bar. Capture a screenshot, mark it up, and shrink it before it leaves your Mac. Drop in any image to make it smaller, or convert it to WebP, JPEG or PNG. Everything runs on your Mac and nothing is uploaded.
 
-This repository currently holds `OptimosCore` (image pipeline) and the `optimos` CLI.
-See `PRD.md` for the product definition and `docs/` for the manual test checklists and the security review. Version history is in `CHANGELOG.md`.
+<p align="center">
+  <a href="https://optimos.075codes.com"><strong>Download</strong></a> ·
+  <a href="docs/INSTALL.md">Install guide</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
-## Build prerequisites (macOS 14+, Apple Silicon)
+<p align="center">
+  <img src="docs/images/capture-overlay.png" width="62%" alt="The capture toolbar under a selected area: annotation tools, colours and sizes on top, output format, size and Share, Copy, Save below.">
+  <img src="docs/images/menu-bar.png" width="28%" alt="The OptimosApp menu: capture area, capture screen, optimize images, preferences.">
+</p>
 
-    brew install webp oxipng pngquant libjpeg-turbo
+## What it does
 
-## Build and test
+- **Capture** an area, a window or the whole screen with a shortcut. Drag the handles to resize the selection, or drag inside it to move it.
+- **Annotate** with rectangles, circles, arrows, lines, text, highlights and numbered markers. Hide passwords and faces with pixelate or blur. Every mark can be moved, resized, recoloured and undone.
+- **Optimize and convert** PNG, JPEG and WebP at three levels: Lossless, Balanced and Smallest. Open HEIC, TIFF and BMP and convert them. Cap the longest side so nothing is bigger than it needs to be.
+- **Stay safe.** A file is replaced only when the result is smaller, and Undo restores every original until you close the window.
+- **Copy, save or share.** Choose the format and size for each capture on the toolbar, then copy it, save it, or send it through the macOS share menu.
+- **Stay private.** No account, no network access, no tracking. Hidden areas are destroyed, not just covered.
 
-    swift build
-    swift test
+<p align="center">
+  <img src="docs/images/optimize-images.png" width="80%" alt="The Optimize Images window: drop images or folders, with level, format and maximum size controls along the bottom.">
+</p>
 
-## CLI
+## Install
 
-    swift run optimos optimize shot.png
-    swift run optimos optimize shot.png --preset Website -o out/
-    swift run optimos convert shot.png --to webp --quality 82 --max-width 1600
-    swift run optimos presets list
+1. Download the latest disk image from **[optimos.075codes.com](https://optimos.075codes.com)** and drag OptimosApp into Applications.
+2. The app is not notarized by Apple yet, so macOS asks before the first launch. Run `xattr -dr com.apple.quarantine /Applications/OptimosApp.app`, or press **Open Anyway** in System Settings > Privacy & Security.
+3. On the first capture, allow **Screen Recording**. OptimosApp offers to restart once, and then it works.
 
-## OptimosApp (menu-bar app)
+Requires a Mac with Apple silicon and macOS 26 or later. The full guide is in [docs/INSTALL.md](docs/INSTALL.md).
 
-A menu-bar app that captures the screen and puts an optimized PNG on the clipboard, or saves it to a folder you choose.
-
-Prerequisites (macOS 14+, Apple Silicon): `brew install xcodegen webp oxipng pngquant libjpeg-turbo`.
-If you rebuild repeatedly, creating `App/Config/Local.xcconfig` is strongly recommended: copy
-`App/Config/Local.xcconfig.example` to it and set your team id (a free Apple ID "Apple Development"
-certificate is enough). Without it the app is ad-hoc signed and gets a new identity on every rebuild,
-so macOS keeps forgetting the Screen Recording permission.
-
-    App/scripts/test.sh     # unit tests (ad-hoc signed, no certificate needed)
-    App/scripts/run.sh      # build and launch the app
-
-Default shortcuts (rebinding comes in a later release):
+## Using it
 
 | Shortcut | Action |
 |---|---|
-| `⌃⌥⌘4` | Capture an area, or press Space to pick a window. A toolbar then appears next to the selection: **Copy** (`Enter` or `⌘C`), **Save** (`⌘S`) or **Cancel** (`Esc`). Drag the handles on the selection to resize it, or drag inside it to move it; dragging outside the toolbar starts a new selection while you have no annotations. The toolbar has two rows: below the annotation tools are **Format** (PNG, JPEG, WebP) and **Max size** menus for that capture (starting from Preferences), and **Share**, which opens the macOS share menu with the finished file. The toolbar also has annotation tools: select/move (`V`), rectangle (`R`), circle (`O`), arrow (`A`), line (`L`), text (`T`), highlight (`H`), numbered markers (`N`), and pixelate (`P`) or blur (`B`) to hide sensitive content, with colour and size pickers, `⌘Z` / `⇧⌘Z` undo and redo, and `Delete` to remove the selected annotation. Copy and Save include the annotations. |
-| `⌃⌥⌘3` | Capture the screen under the mouse and copy it immediately |
+| `⌃⌥⌘4` | Capture an area. Press `Space` to pick a window instead. |
+| `⌃⌥⌘3` | Copy the screen under the mouse. |
+| `⌃⌥⌘O` | Open the Optimize Images window. |
 
-Clicking **Save** opens a save panel to pick the folder and name. In **Preferences… > Saving** you can switch to autosaving instead; the folder you last picked (or `~/Pictures/Optimos/` if none) is then used. **Preferences** (menu-bar menu) also has launch at login, rebindable shortcuts, the optimizer defaults (level, format, max size, replace or copy, keep metadata) and the capture format and level. **Show Last Screenshot in Finder** in the menu reveals the last saved file.
+You can change all three in **Preferences > Shortcuts**.
 
-Troubleshooting: if Screen Recording already shows OptimosApp as allowed but the app keeps asking (this
-happens after rebuilds of an ad-hoc signed build), run `tccutil reset ScreenCapture app.optimos.OptimosApp`,
-relaunch the app, and grant access again. To avoid this, create `App/Config/Local.xcconfig` (a free Apple ID
-"Apple Development" certificate is enough).
+After you select an area, a toolbar appears. `Enter` or `⌘C` copies, `⌘S` saves, and `Esc` cancels. `⌘Z` and `⇧⌘Z` undo and redo, and `Delete` removes the selected mark. The tool keys are:
 
-These avoid macOS's own `⌘⇧3/4/5` so they work on first launch. Manual verification steps are in
-`docs/manual-checks/capture-app.md`.
+| Key | Tool | Key | Tool |
+|---|---|---|---|
+| `V` | Select and move | `T` | Text |
+| `R` | Rectangle | `H` | Highlight |
+| `O` | Circle | `N` | Numbered marker |
+| `A` | Arrow | `P` | Pixelate |
+| `L` | Line | `B` | Blur |
 
-### Optimize Images window
-**Optimize Images…** (menu-bar menu, or `⌃⌥⌘O` from anywhere) opens a window. While it is open, OptimosApp also shows in the Dock and Cmd-Tab so it is easy to find again. Drop images or folders (or use `+`) and they are optimized at once with the **Level** (Lossless, Balanced, Smallest), **Format** (keep, PNG, JPEG, WebP) and **Max size** (fit the longest side, never enlarging) shown in the bottom bar. It also reads HEIC, TIFF and BMP and converts them (HEIC to JPEG, TIFF and BMP to PNG, or any of PNG, JPEG and WebP if you choose a format); those originals are never replaced. Same-format files are replaced in place, and only if the result is smaller. Converted files are written next to the original with the new extension. **Undo** restores the originals and **Again** re-runs from them with the current settings; the backups are deleted when the window closes.
+In **Optimize Images**, drop files or folders on the window. Same-format files are replaced in place, only when the result is smaller. Converted files are written next to the original with the new extension. **Undo** restores the originals, and **Again** re-runs them with new settings.
 
-## Signing and the Screen Recording permission
-macOS ties the Screen Recording permission to the app's code signature. Ad-hoc signing changes with every build, so every rebuild looks like a new app. Run `App/scripts/make-signing-cert.sh` once to create a free self-signed certificate ("OptimosApp Local Signing") in your login keychain and put `CODE_SIGN_STYLE = Manual` and `CODE_SIGN_IDENTITY = OptimosApp Local Signing` in `App/Config/Local.xcconfig` (see `Local.xcconfig.example`). Builds from `run.sh` and releases from `package.sh` then keep one identity, and the permission survives rebuilds and updates. Without that file the project still builds, ad hoc. Back the certificate up (Keychain Access > right-click it > Export) and sign every release with it: a different certificate means a different identity and everyone has to grant the permission again. It is not an Apple certificate, so the first-run Gatekeeper warning remains.
+**Preferences** (in the menu) covers launch at login, where to save, shortcuts, and the defaults for the optimizer and for captures.
 
-## Packaging a build to share
-`App/scripts/package.sh` builds a Release app, bundles `oxipng`, `pngquant` and `jpegtran` with their libraries (so it needs no Homebrew), ad-hoc signs everything, runs a smoke test of the bundled tools, and writes `App/dist/OptimosApp-<version>.dmg` (prints its SHA-256). The result needs Apple silicon and **macOS 26 or later** (the Homebrew `jpegtran` is built for macOS 26) and is **not signed or notarized**: friends follow `docs/INSTALL.md` (also placed in the DMG as "READ ME FIRST.txt") to get past Gatekeeper. The app bundle carries the licenses of the bundled tools and the pngquant source offer under `Contents/Resources/licenses`. To release a new version change `MARKETING_VERSION` in `App/project.yml` first.
+## Build from source
 
-## Website
-`website/` holds the static landing page (Next.js static export, Tailwind, shadcn/ui and shadcnspace blocks). `cd website && pnpm install && pnpm build` writes the plain HTML site to `website/out`. See `website/README.md`; release links live in `website/lib/site.ts`.
+You need a Mac with Apple silicon, Xcode 16 or later, and Homebrew in `/opt/homebrew`.
+
+```sh
+brew install webp oxipng pngquant jpeg-turbo xcodegen
+swift test                    # OptimosCore and the command-line tool
+App/scripts/test.sh           # the app's unit tests
+App/scripts/run.sh            # build and launch the app
+```
+
+The `optimos` command-line tool uses the same engine:
+
+```sh
+swift run optimos optimize shot.png
+swift run optimos optimize shot.png --preset Website -o out/
+swift run optimos convert shot.png --to webp --quality 82 --max-width 1600
+swift run optimos presets list
+```
+
+### Signing and the Screen Recording permission
+
+macOS ties the Screen Recording permission to the app's code signature. An ad-hoc signature changes with every build, so each rebuild looks like a new app and macOS asks again. Run `App/scripts/make-signing-cert.sh` once to create a free self-signed certificate, then copy `App/Config/Local.xcconfig.example` to `App/Config/Local.xcconfig`. Builds then keep one identity, and the permission survives rebuilds. Back up the certificate: signing a release with a different one means everyone grants the permission again.
+
+### Packaging a release
+
+`App/scripts/package.sh` builds a Release app, bundles `oxipng`, `pngquant` and `jpegtran` so it needs no Homebrew, signs it with the hardened runtime, smoke-tests the bundled tools, and writes `App/dist/OptimosApp-<version>.dmg`. To release a new version, change `MARKETING_VERSION` in `App/project.yml`, update `CHANGELOG.md` and the version badge above, then run the script.
+
+### Repository layout
+
+| Path | Contents |
+|---|---|
+| `Sources/OptimosCore` | The image pipeline: decode, resize, convert, optimize. No UI. |
+| `Sources/optimos` | The command-line tool. |
+| `App/` | The menu-bar app (AppKit and SwiftUI) and its scripts. |
+| `website/` | The landing page, a static Next.js site. |
+| `docs/` | Install guide, manual test checklists, security review. |
 
 ## Contributing and security
-Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). To report a vulnerability, see [SECURITY.md](SECURITY.md). The project is released under the [MIT License](LICENSE).
 
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. To report a vulnerability, follow [SECURITY.md](SECURITY.md); a review of the code and its fixes is in [docs/security-review.md](docs/security-review.md).
+
+## License
+
+OptimosApp is released under the [MIT License](LICENSE). It uses and bundles open-source tools under their own licenses: `oxipng` (MIT), `pngquant` (GPL-3.0-or-later, run as a separate program), `libjpeg-turbo` (BSD and IJG) and `libwebp` (BSD). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+Made by Tarik Omercehajic.

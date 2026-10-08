@@ -8,7 +8,7 @@ import Testing
             .appendingPathComponent(UUID().uuidString).appendingPathComponent("presets.json"))
     }
 
-    @Test func builtInsMatchThePRD() throws {
+    @Test func builtInsMatchTheDocumentedPresets() throws {
         let byName = Dictionary(uniqueKeysWithValues: Preset.builtIns.map { ($0.name, $0) })
         let website = try #require(byName["Website"])
         #expect(website.format == .webp && website.quality == 82 && website.maxWidth == 1600 && website.stripMetadata)
