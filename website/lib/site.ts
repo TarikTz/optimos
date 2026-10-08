@@ -8,8 +8,8 @@ export const SITE = {
   version: "0.2.0",
   // The DMG is hosted on 075codes.com (HTTPS: browsers warn about plain-HTTP downloads).
   downloadUrl: "https://075codes.com/OptimosApp-0.2.0.dmg",
-  // Set when the source is published; the "Source code" link stays hidden while this is null.
-  repoUrl: null as string | null,
+  // The "Source code" and "MIT license" footer links stay hidden while this is null.
+  repoUrl: "https://github.com/TarikTz/optimos" as string | null,
   url: "https://optimos.075codes.com",
   title: "OptimosApp: Screenshot, Annotate and Image Optimizer for Mac",
   keywords: [
