@@ -16,3 +16,7 @@ CLAUDE.md
 docs/superpowers/
 # Private product requirements, kept locally only
 docs/PRD.md
+
+# Local design working files: older icon concepts and original screenshots.
+# The sources that matter are tracked in App/Resources/Branding and docs/images.
+assets/
