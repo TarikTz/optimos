@@ -105,5 +105,7 @@ cp ../docs/INSTALL.md "$STAGING/READ ME FIRST.txt"
 DMG="$DIST/OptimosApp-$VERSION.dmg"
 rm -f "$DMG"
 hdiutil create -quiet -volname "OptimosApp $VERSION" -srcfolder "$STAGING" -ov -format UDZO "$DMG"
-echo "==> Done: App/$DMG"
+# The same file under a fixed name, so the website can link to .../releases/latest/download/OptimosApp.dmg
+cp "$DMG" "$DIST/OptimosApp.dmg"
+echo "==> Done: App/$DMG (and App/$DIST/OptimosApp.dmg for the GitHub release)"
 shasum -a 256 "$DMG"

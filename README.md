@@ -42,7 +42,7 @@ OptimosApp is a free Mac app that lives in your menu bar. Capture a screenshot, 
 
 ## Install
 
-1. Download the latest disk image from **[optimos.075codes.com](https://optimos.075codes.com)** and drag OptimosApp into Applications.
+1. Download the latest disk image from the **[website](https://optimos.075codes.com)** or the **[releases page](https://github.com/TarikTz/optimos/releases/latest)** and drag OptimosApp into Applications.
 2. The app is not notarized by Apple yet, so macOS asks before the first launch. Run `xattr -dr com.apple.quarantine /Applications/OptimosApp.app`, or press **Open Anyway** in System Settings > Privacy & Security.
 3. On the first capture, allow **Screen Recording**. OptimosApp offers to restart once, and then it works.
 
@@ -98,7 +98,12 @@ macOS ties the Screen Recording permission to the app's code signature. An ad-ho
 
 ### Packaging a release
 
-`App/scripts/package.sh` builds a Release app, bundles `oxipng`, `pngquant` and `jpegtran` so it needs no Homebrew, signs it with the hardened runtime, smoke-tests the bundled tools, and writes `App/dist/OptimosApp-<version>.dmg`. To release a new version, change `MARKETING_VERSION` in `App/project.yml`, update `CHANGELOG.md` and the version badge above, then run the script.
+`App/scripts/package.sh` builds a Release app, bundles `oxipng`, `pngquant` and `jpegtran` so it needs no Homebrew, signs it with the hardened runtime, smoke-tests the bundled tools, and writes `App/dist/OptimosApp-<version>.dmg`. To release a new version:
+
+1. Change `MARKETING_VERSION` in `App/project.yml`, add the entry to `CHANGELOG.md`, and update the version badge above and `version` in `website/lib/site.ts`.
+2. Run `App/scripts/package.sh`, then tag and push (`git tag -a vX.Y.Z -m "OptimosApp X.Y.Z" && git push origin main vX.Y.Z`).
+3. Publish the release with both files: `gh release create vX.Y.Z App/dist/OptimosApp-X.Y.Z.dmg App/dist/OptimosApp.dmg --title "OptimosApp X.Y.Z" --notes-file notes.md`. The fixed name `OptimosApp.dmg` is what the website's Download button links to.
+4. Redeploy the website (`DEPLOY_HOST=user@server website/scripts/deploy.sh`) so it shows the new version.
 
 ### Repository layout
 

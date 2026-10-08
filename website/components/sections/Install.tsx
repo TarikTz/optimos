@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SITE } from "@/lib/site";
+import FirstLaunch from "@/components/sections/FirstLaunch";
 
 const steps = [
   { title: "Download and drag", text: "Open the disk image and drag OptimosApp into Applications." },
-  { title: "Allow it once", text: "The app is not notarized by Apple yet, so macOS asks first. In Terminal run the line below, or press Open Anyway in System Settings > Privacy & Security." },
+  { title: "Allow it once", text: "The app is not notarized by Apple yet, so macOS asks before the first launch. Approve it once, in Terminal or System Settings (see below)." },
   { title: "Grant screen recording", text: "The first capture asks for Screen Recording permission. Allow it, then quit and reopen the app." },
 ];
 
@@ -26,7 +27,7 @@ export default function Install() {
             </li>
           ))}
         </ol>
-        <pre className="overflow-x-auto rounded-xl bg-muted p-4 text-sm"><code>xattr -dr com.apple.quarantine /Applications/OptimosApp.app</code></pre>
+        <FirstLaunch />
         <div className="flex justify-center">
           <Button render={<a href={SITE.downloadUrl} />} nativeButton={false} className="h-11 rounded-full px-6">
             Download OptimosApp {SITE.version}
