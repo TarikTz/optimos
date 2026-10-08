@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.1 (unreleased)
+## 0.2.1 - 2026-10-08
 - Release builds use the hardened runtime, which stops other programs from injecting code into the app.
 - Images that declare more than 100 megapixels or 30000 pixels on a side are refused before decoding.
 - Bundled tools are used exclusively inside the app, run with a clean environment, and stop after 2 minutes or when cancelled.
