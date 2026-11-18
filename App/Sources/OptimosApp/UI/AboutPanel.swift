@@ -26,7 +26,7 @@ enum AboutPanel {
             attributes: [.font: font, .paragraphStyle: paragraph, .foregroundColor: NSColor.labelColor])
         let tools: [(String, String, String)] = [
             ("oxipng", "MIT", "https://github.com/shssoichiro/oxipng"),
-            ("pngquant", "GPL-3.0-or-later", "https://pngquant.org"),
+            ("quantizr (PNG color reduction)", "MIT", "https://github.com/imazen/quantizr"),
             ("libjpeg (jpegtran)", "IJG / BSD", "https://libjpeg-turbo.org"),
             ("libwebp", "BSD-3-Clause", "https://developers.google.com/speed/webp"),
         ]

@@ -20,7 +20,7 @@ public struct EncodeOptions: Sendable, Equatable {
     public var quality: Int?
     /// WebP only: force lossless encoding.
     public var lossless: Bool
-    /// PNG only: opt-in pngquant-style quantization range, e.g. 60...90.
+    /// PNG only: opt-in quantization quality range (optimos-quant), e.g. 60...90.
     public var quantizeQuality: ClosedRange<Int>?
     /// Used to flatten transparency when writing JPEG.
     public var background: RGBColor?

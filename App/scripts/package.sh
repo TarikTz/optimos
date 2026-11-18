@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds a Release OptimosApp.app, bundles the optimizer tools and their libraries into it, ad-hoc signs
+# Builds a Release OptimosApp.app, bundles the optimizer tools (and builds optimos-quant with cargo) and their libraries into it, ad-hoc signs
 # everything, and writes App/dist/OptimosApp-<version>.dmg. Needs the Homebrew tools from the README
 # and macOS 26+ on the machine that runs the result (the bundled jpegtran is built for macOS 26).
 set -euo pipefail
@@ -49,7 +49,13 @@ copy_tool() {
   bundle_deps "$RES/tools/$(basename "$1")" "@loader_path/../lib"
 }
 copy_tool "$BREW/bin/oxipng"
-copy_tool "$BREW/bin/pngquant"
+
+# optimos-quant is our own MIT-licensed PNG quantizer (Tools/optimos-quant), built here from source for the
+# oldest macOS the app targets. It links no Homebrew libraries, so it needs no bundling of dependencies.
+echo "==> Building optimos-quant"
+( cd ../Tools/optimos-quant && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked --quiet )
+cp ../Tools/optimos-quant/target/release/optimos-quant "$RES/tools/optimos-quant"
+chmod u+w "$RES/tools/optimos-quant"
 copy_tool "$BREW/opt/jpeg-turbo/bin/jpegtran"
 # jpegtran reaches its library through an @rpath entry; make sure the library is bundled too.
 cp -L "$BREW/opt/jpeg-turbo/lib/libjpeg.8.dylib" "$RES/lib/libjpeg.8.dylib"
@@ -62,21 +68,14 @@ if otool -L "$RES"/tools/* "$RES"/lib/* | grep -E '/opt/homebrew|/usr/local'; th
   exit 1
 fi
 
-echo "==> Licenses and the pngquant source offer"
+echo "==> Licenses"
 cp "$BREW/opt/oxipng/LICENSE" "$RES/licenses/oxipng-LICENSE"
-cp "$BREW/opt/pngquant/COPYRIGHT" "$RES/licenses/pngquant-COPYRIGHT-and-GPL-3.0"
+cp ../Tools/optimos-quant/THIRD-PARTY-LICENSES.txt "$RES/licenses/optimos-quant-THIRD-PARTY-LICENSES.txt"
 cp "$BREW/opt/jpeg-turbo/LICENSE.md" "$RES/licenses/libjpeg-turbo-LICENSE.md"
 cp "$BREW/opt/little-cms2/LICENSE" "$RES/licenses/lcms2-LICENSE"
 cp "$BREW/opt/libpng/LICENSE" "$RES/licenses/libpng-LICENSE"
 cp ../LICENSE "$RES/licenses/OptimosApp-MIT-LICENSE"
 cp ../THIRD-PARTY-NOTICES.md "$RES/licenses/THIRD-PARTY-NOTICES.md"
-PNGQUANT_VERSION=$("$BREW/bin/pngquant" --version | awk '{print $1}')
-cat > "$RES/licenses/SOURCE-OFFER.txt" <<OFFER
-OptimosApp bundles pngquant $PNGQUANT_VERSION (GPL-3.0-or-later) as a separate program in Contents/Resources/tools.
-Its complete corresponding source code is available at:
-  https://github.com/kornelski/pngquant/archive/refs/tags/$PNGQUANT_VERSION.tar.gz
-and, on request, from the OptimosApp author. The GPL text is in pngquant-COPYRIGHT-and-GPL-3.0.
-OFFER
 
 echo "==> Signing with: $SIGN_ID"
 for f in "$RES"/lib/* "$RES"/tools/*; do codesign --force --sign "$SIGN_ID" "$f" > /dev/null 2>&1; done
@@ -90,10 +89,11 @@ TMP=$(mktemp -d)
 printf 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' | base64 -d > "$TMP/t.png"
 sips -s format jpeg "$TMP/t.png" --out "$TMP/t.jpg" > /dev/null
 env -i "$RES/tools/oxipng" - --stdout < "$TMP/t.png" > "$TMP/o1.png"
-env -i "$RES/tools/pngquant" --quality=0-100 - < "$TMP/t.png" > "$TMP/o2.png"
+# The 1-pixel test image cannot get smaller, so "not smaller" (98) counts as a working tool.
+env -i "$RES/tools/optimos-quant" --quality=0-100 - < "$TMP/t.png" > "$TMP/o2.png" && Q=0 || Q=$?
 env -i "$RES/tools/jpegtran" -optimize < "$TMP/t.jpg" > "$TMP/o3.jpg"
 [ "$(head -c 4 "$TMP/o1.png" | xxd -p)" = "89504e47" ] || { echo "error: bundled oxipng failed" >&2; exit 1; }
-[ "$(head -c 4 "$TMP/o2.png" | xxd -p)" = "89504e47" ] || { echo "error: bundled pngquant failed" >&2; exit 1; }
+{ [ "$Q" = 98 ] || [ "$(head -c 4 "$TMP/o2.png" | xxd -p)" = "89504e47" ]; } || { echo "error: bundled optimos-quant failed" >&2; exit 1; }
 [ "$(head -c 2 "$TMP/o3.jpg" | xxd -p)" = "ffd8" ] || { echo "error: bundled jpegtran failed" >&2; exit 1; }
 rm -rf "$TMP"
 

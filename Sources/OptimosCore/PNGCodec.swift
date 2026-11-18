@@ -34,15 +34,15 @@ struct PNGCodec: Codec {
         return result.output
     }
 
-    /// Lossy palette quantization. nil when pngquant cannot reach the quality (99)
-    /// or would not make the file smaller (98).
+    /// Lossy palette quantization with optimos-quant (Tools/optimos-quant). nil when it cannot reach the
+    /// quality (99) or would not make the file smaller (98). The embedded colour profile is kept.
     static func quantize(_ data: Data, quality: ClosedRange<Int>) throws -> Data? {
-        let args = ["--quality=\(quality.lowerBound)-\(quality.upperBound)", "--speed", "3", "-"]
-        let result = try ExternalTool(name: "pngquant").run(args, input: data)
+        let args = ["--quality=\(quality.lowerBound)-\(quality.upperBound)", "-"]
+        let result = try ExternalTool(name: "optimos-quant").run(args, input: data)
         switch result.status {
         case 0 where !result.output.isEmpty: return result.output
         case 98, 99: return nil
-        default: throw OptimosError.encodeFailed("pngquant failed: \(result.errorOutput)")
+        default: throw OptimosError.encodeFailed("optimos-quant failed: \(result.errorOutput)")
         }
     }
 }

@@ -3,9 +3,11 @@
 Thanks for helping. A few notes to make a change easy to review.
 
 ## Set up
-Requirements: a Mac with Apple silicon, macOS 14 or later to build (the packaged app needs macOS 26), Xcode 16 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen) and Homebrew in its default `/opt/homebrew` location.
+Requirements: a Mac with Apple silicon, macOS 14 or later to build (the packaged app needs macOS 26), Xcode 16 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen), Rust and Homebrew in its default `/opt/homebrew` location.
 
-    brew install webp oxipng pngquant jpeg-turbo xcodegen
+    brew install webp oxipng jpeg-turbo xcodegen rust
+    cargo install --path Tools/optimos-quant --locked   # the PNG quantizer, into ~/.cargo/bin (re-run after changing it)
+    (cd Tools/optimos-quant && cargo test --release)    # its own tests
     swift test                 # OptimosCore and the optimos command-line tool
     cd App && ./scripts/test.sh   # the app's unit tests (generates the Xcode project first)
 
@@ -14,6 +16,7 @@ Requirements: a Mac with Apple silicon, macOS 14 or later to build (the packaged
 ## Project layout
 - `Sources/OptimosCore`: the image pipeline (decode, resize, convert, optimize). No UI. Most logic and tests live here.
 - `Sources/optimos`: the command-line front end.
+- `Tools/optimos-quant`: the lossy PNG quantizer (Rust), run as a separate program by `OptimosCore`.
 - `App/`: the menu-bar app (AppKit and SwiftUI). `project.yml` is the XcodeGen spec; the `.xcodeproj` is generated and git-ignored.
 - `website/`: the static landing page (Next.js).
 - `docs/manual-checks/`: checklists for the things unit tests cannot cover (overlay, permissions, install).

@@ -74,10 +74,11 @@ In **Optimize Images**, drop files or folders on the window. Same-format files a
 
 ## Build from source
 
-You need a Mac with Apple silicon, Xcode 16 or later, and Homebrew in `/opt/homebrew`.
+You need a Mac with Apple silicon, Xcode 16 or later, Homebrew in `/opt/homebrew`, and a Rust toolchain (`brew install rust`) for the PNG quantizer.
 
 ```sh
-brew install webp oxipng pngquant jpeg-turbo xcodegen
+brew install webp oxipng jpeg-turbo xcodegen rust
+cargo install --path Tools/optimos-quant --locked   # the PNG quantizer, into ~/.cargo/bin
 swift test                    # OptimosCore and the command-line tool
 App/scripts/test.sh           # the app's unit tests
 App/scripts/run.sh            # build and launch the app
@@ -98,7 +99,7 @@ macOS ties the Screen Recording permission to the app's code signature. An ad-ho
 
 ### Packaging a release
 
-`App/scripts/package.sh` builds a Release app, bundles `oxipng`, `pngquant` and `jpegtran` so it needs no Homebrew, signs it with the hardened runtime, smoke-tests the bundled tools, and writes `App/dist/OptimosApp-<version>.dmg`. To release a new version:
+`App/scripts/package.sh` builds a Release app, builds `optimos-quant` and bundles it with `oxipng` and `jpegtran` so it needs no Homebrew, signs it with the hardened runtime, smoke-tests the bundled tools, and writes `App/dist/OptimosApp-<version>.dmg`. To release a new version:
 
 1. Change `MARKETING_VERSION` in `App/project.yml`, add the entry to `CHANGELOG.md`, and update the version badge above and `version` in `website/lib/site.ts`.
 2. Run `App/scripts/package.sh`, then tag and push (`git tag -a vX.Y.Z -m "OptimosApp X.Y.Z" && git push origin main vX.Y.Z`).
@@ -121,6 +122,6 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. To rep
 
 ## License
 
-OptimosApp is released under the [MIT License](LICENSE). It uses and bundles open-source tools under their own licenses: `oxipng` (MIT), `pngquant` (GPL-3.0-or-later, run as a separate program), `libjpeg-turbo` (BSD and IJG) and `libwebp` (BSD). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+OptimosApp is released under the [MIT License](LICENSE). It uses and bundles open-source tools under their own licenses: `oxipng` (MIT), `optimos-quant` (our own PNG quantizer, built on `quantizr`, MIT), `libjpeg-turbo` (BSD and IJG) and `libwebp` (BSD). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 Made by Tarik Omercehajic.

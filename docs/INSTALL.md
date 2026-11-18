@@ -24,6 +24,6 @@ NOTES
 - When Screen Recording access turns on, OptimosApp offers to restart itself once. Accept, and captures work.
 - If captures stop working after you install a different build, remove OptimosApp from the Screen
   Recording list with the minus button, run the app again, allow it, and accept the restart.
-- OptimosApp bundles open-source tools (oxipng, pngquant, libjpeg-turbo) under their own licenses,
+- OptimosApp bundles open-source tools (oxipng, libjpeg-turbo, and the quantizr-based optimos-quant) under their own licenses,
   listed in OptimosApp.app/Contents/Resources/licenses.
 - Questions or problems: contact Tarik Omercehajic.

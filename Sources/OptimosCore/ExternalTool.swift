@@ -32,6 +32,8 @@ struct ExternalTool: Sendable {
         }
         if let bundled { paths.append(bundled) }
         paths += ["/opt/homebrew/bin", "/opt/homebrew/opt/jpeg-turbo/bin", "/opt/homebrew/opt/libjpeg-turbo/bin"]
+        // `cargo install --path Tools/optimos-quant` puts the PNG quantizer here (development builds only).
+        paths.append(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cargo/bin").path)
         return paths
     }
 

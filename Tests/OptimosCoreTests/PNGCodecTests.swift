@@ -39,6 +39,33 @@ import Testing
         #expect(result == nil || result!.count < input.count)
     }
 
+    // optimos-quant must really reduce an image, not just decline. (The opaque fixture is a regular
+    // gradient that zlib already packs tightly, so the tool rightly declines it; the translucent one shrinks.)
+    @Test func quantizeShrinksAnImageAndKeepsItDecodable() throws {
+        let input = Fixtures.png(width: 200, height: 150, transparent: true)
+        let out = try #require(try PNGCodec.quantize(input, quality: 0...100))
+        #expect(out.count < input.count)
+        #expect(ImageFormat.sniff(out) == .png)
+        let decoded = try PNGCodec().decode(out)
+        #expect(decoded.width == 200 && decoded.height == 150)
+    }
+
+    // macOS screenshots are Display P3: quantizing must not drop or convert the profile.
+    @Test func quantizeKeepsDisplayP3Profile() throws {
+        let p3 = CGColorSpace(name: CGColorSpace.displayP3)!
+        let input = Fixtures.png(width: 200, height: 150, transparent: true, space: p3)
+        let out = try #require(try PNGCodec.quantize(input, quality: 0...100))
+        let name = try PNGCodec().decode(out).cgImage.colorSpace?.name as String?
+        #expect(name == (CGColorSpace.displayP3 as String))
+    }
+
+    // Transparency has to survive the palette.
+    @Test func quantizeKeepsTransparency() throws {
+        let input = Fixtures.png(width: 200, height: 150, transparent: true)
+        let out = try #require(try PNGCodec.quantize(input, quality: 0...100))
+        #expect(try PNGCodec().decode(out).hasTransparency)
+    }
+
     @Test func encodesFromPixelsWhenSourceIsGone() throws {
         var image = Fixtures.imageData(Fixtures.cgImage())
         image.format = .jpeg  // pretend it came from elsewhere

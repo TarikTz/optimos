@@ -1,0 +1,17 @@
+[package]
+name = "optimos-quant"
+version = "0.1.0"
+edition = "2021"
+description = "Lossy PNG palette quantization for OptimosApp (replaces pngquant)"
+license = "MIT"
+publish = false
+
+[dependencies]
+png = "0.17"
+quantizr = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

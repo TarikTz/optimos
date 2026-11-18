@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- PNG color reduction now uses `optimos-quant`, our own MIT-licensed tool built on quantizr, instead of the GPL `pngquant`. It keeps the embedded color profile and gives smaller files at similar quality on screenshots.
+
 ## 0.2.1 - 2026-10-08
 - Release builds use the hardened runtime, which stops other programs from injecting code into the app.
 - Images that declare more than 100 megapixels or 30000 pixels on a side are refused before decoding.

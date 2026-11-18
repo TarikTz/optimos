@@ -6,7 +6,7 @@ Please do not open a public issue for a security problem. Use the repository's p
 ## What the app does and does not do
 - It runs entirely on your Mac. It makes no network connections, has no accounts, and sends no analytics.
 - It needs the Screen Recording permission only to capture the screen when you press a capture shortcut.
-- It bundles the open-source tools `oxipng`, `pngquant` and `jpegtran`, and runs them as separate processes with a clean environment, a timeout and no network use.
+- It bundles the open-source tools `oxipng`, `jpegtran` and its own PNG quantizer `optimos-quant`, and runs them as separate processes with a clean environment, a timeout and no network use.
 - Images are refused before decoding when they declare more than 100 megapixels or 30000 pixels on a side.
 - Release builds use the hardened runtime.
 

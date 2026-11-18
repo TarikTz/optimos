@@ -14,7 +14,7 @@ Screen Recording permission survives rebuilds (a free Apple ID "Apple Developmen
 If Screen Recording already shows OptimosApp as allowed but the app keeps asking (this happens after rebuilds
 of an ad-hoc signed build): run `tccutil reset ScreenCapture app.optimos.OptimosApp`, relaunch the app, and
 grant access again. On macOS 15 and later the system may periodically ask you to re-confirm screen recording
-for apps like this; if a capture seems to hang, look for that prompt. Install the tools: `brew install xcodegen webp oxipng pngquant libjpeg-turbo`.
+for apps like this; if a capture seems to hang, look for that prompt. Install the tools: `brew install xcodegen webp oxipng libjpeg-turbo rust`, then `cargo install --path Tools/optimos-quant --locked`.
 
 ## Permission and menu
 1. [ ] First launch with no Screen Recording permission: press `⌃⌥⌘3`. A toast asks you to allow Screen Recording and restart; the system prompt appears; nothing crashes.
