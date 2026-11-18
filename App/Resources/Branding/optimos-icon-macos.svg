@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <defs>
+    <!-- Subtle dark matte gradient for the macOS squircle -->
+    <linearGradient id="bgGrad" x1="512" y1="64" x2="512" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#27272B" />
+      <stop offset="100%" stop-color="#141416" />
+    </linearGradient>
+
+    <!-- Subtle top-edge specular rim highlight -->
+    <linearGradient id="rimGrad" x1="512" y1="64" x2="512" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.24" />
+      <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.45" />
+    </linearGradient>
+
+    <!-- Soft electric mint glow -->
+    <filter id="mintGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.486
+                0 0 0 0 0.953
+                0 0 0 0 0.898
+                0 0 0 0.42 0" result="coloredBlur" />
+      <feMerge>
+        <feMergeNode in="coloredBlur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Soft drop shadow for the squircle on transparent background -->
+    <filter id="iconShadow" x="-12%" y="-10%" width="124%" height="126%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000000" flood-opacity="0.38" />
+    </filter>
+
+    <!-- Clip path for the inner area of the image frame -->
+    <clipPath id="imageInnerClip">
+      <rect x="356" y="388" width="312" height="248" rx="34" />
+    </clipPath>
+  </defs>
+
+  <!-- macOS Squircle Base on Transparent Background -->
+  <g filter="url(#iconShadow)">
+    <path d="M 512 64
+             C 752 64, 836 64, 898 126
+             C 960 188, 960 272, 960 512
+             C 960 752, 960 836, 898 898
+             C 836 960, 752 960, 512 960
+             C 272 960, 188 960, 126 898
+             C 64 836, 64 752, 64 512
+             C 64 272, 64 188, 126 126
+             C 188 64, 272 64, 512 64 Z" fill="url(#bgGrad)" />
+
+    <path d="M 512 65.5
+             C 751 65.5, 835 65.5, 896.8 127.2
+             C 958.5 189, 958.5 273, 958.5 512
+             C 958.5 751, 958.5 835, 896.8 896.8
+             C 835 958.5, 751 958.5, 512 958.5
+             C 273 958.5, 189 958.5, 127.2 896.8
+             C 65.5 835, 65.5 751, 65.5 512
+             C 65.5 273, 65.5 189, 127.2 127.2
+             C 189 65.5, 273 65.5, 512 65.5 Z" stroke="url(#rimGrad)" stroke-width="3" />
+  </g>
+
+  <!-- Crop Frame Corners (Crisp Off-White #F4F4F5) -->
+  <g stroke="#F4F4F5" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 272 372 L 272 284 C 272 277.373 277.373 272 284 272 L 372 272" />
+    <path d="M 652 272 L 740 272 C 746.627 272 752 277.373 752 284 L 752 372" />
+    <path d="M 272 652 L 272 740 C 272 746.627 277.373 752 284 752 L 372 752" />
+    <path d="M 652 752 L 740 752 C 746.627 752 752 746.627 752 740 L 752 652" />
+  </g>
+
+  <!-- Subtle Inward Compression Arrows -->
+  <g stroke="#4E4E56" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="512" y1="248" x2="512" y2="314" />
+    <polyline points="484,290 512,318 540,290" />
+    <line x1="512" y1="776" x2="512" y2="710" />
+    <polyline points="484,734 512,706 540,734" />
+  </g>
+
+  <!-- Center Electric Mint Image Badge (#7CF3E5) -->
+  <g filter="url(#mintGlow)">
+    <g clip-path="url(#imageInnerClip)">
+      <rect x="356" y="388" width="312" height="248" fill="#7CF3E5" fill-opacity="0.12" />
+      <!-- Mountain Peaks cleanly anchored to bottom -->
+      <path d="M 350 636
+               L 458 508
+               C 466 498, 480 498, 488 508
+               L 534 562
+               L 566 530
+               C 574 522, 586 522, 594 530
+               L 674 636
+               Z" fill="#7CF3E5" />
+    </g>
+
+    <!-- Sun / Circle Dot -->
+    <circle cx="586" cy="462" r="23" fill="#7CF3E5" />
+
+    <!-- Outer Rounded Picture Frame -->
+    <rect x="356" y="388" width="312" height="248" rx="34" stroke="#7CF3E5" stroke-width="28" />
+  </g>
+</svg>

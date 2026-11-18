@@ -1,28 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <title>Optimos icon</title>
-  <desc>Monochrome image optimization icon with two inward arrows</desc>
-
-  <!-- Top-left frame corner -->
-  <path d="M112 178V142C112 125.431 125.431 112 142 112H188"
-        stroke="#000" stroke-width="28" stroke-linecap="round"/>
-
-  <!-- Bottom-right frame corner -->
-  <path d="M324 400H370C386.569 400 400 386.569 400 370V324"
-        stroke="#000" stroke-width="28" stroke-linecap="round"/>
-
-  <!-- Image: mountain -->
-  <path d="M160 342L225 245C232.286 234.114 248.202 234.114 255.488 245L318 342H160Z"
-        fill="#000"/>
-  <path d="M255 342L286 296L327 342H255Z" fill="#000"/>
-
-  <!-- Image: sun -->
-  <circle cx="298" cy="226" r="24" fill="#000"/>
-
-  <!-- Top-right inward arrow -->
-  <path d="M385 88L332 141M332 141V106M332 141H367"
-        stroke="#000" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Bottom-left inward arrow -->
-  <path d="M127 392L180 339M180 339V374M180 339H145"
-        stroke="#000" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="224 224 576 576" width="576" height="576" fill="none">
+  <title>Optimos menu-bar glyph</title>
+  <desc>One-colour version of the icon for the macOS menu bar: crop corners around a picture. Heavier strokes than the app icon so it stays readable at 18 px.</desc>
+  <clipPath id="inside"><rect x="348" y="382" width="328" height="260" rx="36"/></clipPath>
+  <!-- Crop corners -->
+  <g stroke="#000" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 256 364 L 256 268 C 256 261.373 261.373 256 268 256 L 364 256"/>
+    <path d="M 660 256 L 756 256 C 762.627 256 768 261.373 768 268 L 768 364"/>
+    <path d="M 256 660 L 256 756 C 256 762.627 261.373 768 268 768 L 364 768"/>
+    <path d="M 660 768 L 756 768 C 762.627 768 768 762.627 768 756 L 768 660"/>
+  </g>
+  <!-- Picture: frame, mountains, sun -->
+  <rect x="348" y="382" width="328" height="260" rx="36" stroke="#000" stroke-width="50"/>
+  <g clip-path="url(#inside)">
+    <path d="M 330 650 L 454 508 C 462 498 478 498 486 508 L 534 566 L 568 532 C 576 524 590 524 598 532 L 700 650 Z" fill="#000"/>
+  </g>
+  <circle cx="590" cy="468" r="30" fill="#000"/>
 </svg>

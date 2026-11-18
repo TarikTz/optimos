@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- Template for the website share image (1200x630) and the GitHub social preview (1280x640).
+     The size comes from the query string, for example og-template.html?w=1200&h=630.
+     The icon is read from optimos-icon-flat.svg next to this file. -->
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Chivo+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#18181b; --graphite:#27272a; --aqua:#94faf0; --mint:#7cf3e5; --cloud:#f4f4f5; --slate:#a1a1aa; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 100%; height: 100%; }
+  body {
+    background: radial-gradient(900px 520px at 78% 18%, rgba(124,243,229,.20), transparent 60%),
+                radial-gradient(700px 500px at 5% 105%, rgba(148,250,240,.10), transparent 60%), var(--ink);
+    font-family: "Inter Tight", -apple-system, "Helvetica Neue", sans-serif; color: var(--cloud);
+    display: flex; align-items: center; padding: 0 7vw; gap: 5.5vw;
+  }
+  img { width: 34vh; height: 34vh; flex: none; filter: drop-shadow(0 2.2vh 3vh rgba(0,0,0,.45)); }
+  .text { display: flex; flex-direction: column; gap: 2.4vh; min-width: 0; }
+  h1 { font-size: 15.5vh; line-height: .98; font-weight: 700; letter-spacing: -.035em; }
+  p.slogan { font-size: 6.6vh; font-weight: 500; color: var(--aqua); letter-spacing: -.01em; }
+  p.meta { font-family: "Chivo Mono", ui-monospace, Menlo, monospace; font-size: 3.2vh; color: var(--slate); margin-top: 1.4vh; }
+</style>
+</head>
+<body>
+  <img src="optimos-icon-flat.svg" alt="">
+  <div class="text">
+    <h1>OptimosApp</h1>
+    <p class="slogan">Capture. Optimize. Convert.</p>
+    <p class="meta">Free, open-source Mac app · optimos.075codes.com</p>
+  </div>
+<script>
+  const q = new URLSearchParams(location.search);
+  // Nothing to do: the size is the window size. The query only documents the intended dimensions.
+  document.title = `share ${q.get("w") || ""}x${q.get("h") || ""}`;
+</script>
+</body>
+</html>

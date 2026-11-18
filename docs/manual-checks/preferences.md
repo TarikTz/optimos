@@ -25,6 +25,6 @@ Open **Preferences…** from the menu-bar menu (or `⌘,` while the menu is open
 14. [ ] Captures: set Format to WebP and Level to Balanced. Capture and Save: the file is `.webp` (and the save panel offers `.webp`). Copy and paste into an app: it pastes as an image (PNG). Set Format back to PNG, Level Lossless to restore today's behaviour.
 
 ## Branding and About
-15. [ ] The menu-bar icon is the new glyph (a mountain with four corners and arrows), adapts to light and dark menu bars, and is not blurry.
-16. [ ] **About OptimosApp** shows the coloured icon, name, version 0.1.0, "© 2026 Tarik Omercehajic", the slogan and the tool credits with working links.
-17. [ ] The Dock icon (while a window is open) and Cmd-Tab show the coloured icon.
+15. [ ] The menu-bar icon is the glyph of four crop corners around a picture, adapts to light and dark menu bars, and is not blurry.
+16. [ ] **About OptimosApp** shows the app icon (dark tile with a mint-green picture), name, the current version, "© 2026 Tarik Omercehajic", the slogan and the tool credits with working links.
+17. [ ] The Dock icon (while a window is open) and Cmd-Tab show the dark-tile icon with the mint-green picture, with the soft shadow and no white edge.

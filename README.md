@@ -7,11 +7,11 @@
 <p align="center"><em>Capture. Optimize. Convert.</em></p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-2D6BFF"></a>
-  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-brightgreen"></a>
-  <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B%20%C2%B7%20Apple%20silicon-black?logo=apple&logoColor=white">
-  <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
-  <a href="https://optimos.075codes.com"><img alt="Website" src="https://img.shields.io/badge/website-optimos.075codes.com-14C2B3"></a>
+  <a href="CHANGELOG.md"><img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-7CF3E5?labelColor=27272B"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-7CF3E5?labelColor=27272B"></a>
+  <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B%20%C2%B7%20Apple%20silicon-27272B?logo=apple&logoColor=white&labelColor=27272B">
+  <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white&labelColor=27272B">
+  <a href="https://optimos.075codes.com"><img alt="Website" src="https://img.shields.io/badge/website-optimos.075codes.com-7CF3E5?labelColor=27272B"></a>
 </p>
 
 OptimosApp is a free Mac app that lives in your menu bar. Capture a screenshot, mark it up, and shrink it before it leaves your Mac. Drop in any image to make it smaller, or convert it to WebP, JPEG or PNG. Everything runs on your Mac and nothing is uploaded.

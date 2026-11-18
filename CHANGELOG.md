@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- New app icon: a dark tile with a mint-green picture inside crop corners and two inward arrows. The menu-bar icon, website, README and share images use the same artwork, generated from SVG sources with `App/scripts/make-icons.sh`.
+
 ## 0.3.0 - 2026-11-18
 - PNG color reduction now uses `optimos-quant`, our own MIT-licensed tool built on quantizr, instead of the GPL `pngquant`. It keeps the embedded color profile and gives smaller files at similar quality on screenshots.
 

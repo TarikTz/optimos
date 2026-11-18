@@ -19,7 +19,7 @@ docs/PRD.md
 
 # Local design working files: older icon concepts and original screenshots.
 # The sources that matter are tracked in App/Resources/Branding and docs/images.
-assets/
+/assets/
 
 # Rust build output of the PNG quantizer tool
 Tools/optimos-quant/target/
