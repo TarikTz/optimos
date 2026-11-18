@@ -7,7 +7,7 @@
 <p align="center"><em>Capture. Optimize. Convert.</em></p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img alt="Version 0.2.1" src="https://img.shields.io/badge/version-0.2.1-2D6BFF"></a>
+  <a href="CHANGELOG.md"><img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-2D6BFF"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-brightgreen"></a>
   <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B%20%C2%B7%20Apple%20silicon-black?logo=apple&logoColor=white">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-11-18
 - PNG color reduction now uses `optimos-quant`, our own MIT-licensed tool built on quantizr, instead of the GPL `pngquant`. It keeps the embedded color profile and gives smaller files at similar quality on screenshots.
 
 ## 0.2.1 - 2026-10-08
