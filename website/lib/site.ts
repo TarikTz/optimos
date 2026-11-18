@@ -7,7 +7,7 @@ export const SITE = {
   author: "Tarik Omercehajic",
   // Public contact address, shown on the support and privacy pages.
   contactEmail: "tarik.omercehajic@gmail.com",
-  version: "0.3.0",
+  version: "0.3.1",
   // GitHub's "latest release" always serves the newest DMG under this fixed name (see the release
   // steps in the README), so a new release needs no link change, only the version below.
   downloadUrl: "https://github.com/TarikTz/optimos/releases/latest/download/OptimosApp.dmg",

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 - 2026-11-18
 - New app icon: a dark tile with a mint-green picture inside crop corners and two inward arrows. The menu-bar icon, website, README and share images use the same artwork, generated from SVG sources with `App/scripts/make-icons.sh`.
 
 ## 0.3.0 - 2026-11-18
