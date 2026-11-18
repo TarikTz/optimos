@@ -1,6 +1,6 @@
 # OptimosApp website
 
-The static landing page for OptimosApp. Next.js (static export), Tailwind and shadcn/ui, with sections adapted from the free [shadcnspace](https://shadcnspace.com) blocks (MIT).
+The static landing page for OptimosApp. Next.js (static export) and Tailwind, with a few shadcn/ui primitives. The look follows a local style guide (`design_docs/`, not in the repository); its tokens are copied into `app/globals.css`. Display type is Inter Tight, standing in for the guide's licensed Neo Grotesk.
 
     pnpm install
     pnpm dev      # http://localhost:3000

@@ -1,5 +1,3 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { SITE } from "@/lib/site";
 import FirstLaunch from "@/components/sections/FirstLaunch";
 
@@ -11,27 +9,31 @@ const steps = [
 
 export default function Install() {
   return (
-    <section id="install" className="scroll-mt-24">
-      <div className="mx-auto max-w-4xl px-4 sm:px-8 py-20 flex flex-col gap-10">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <Badge variant="outline" className="h-auto px-3 py-1 text-sm font-normal">Install</Badge>
-          <h2 className="text-3xl font-semibold md:text-4xl">Up and running in a minute</h2>
-          <p className="text-lg text-muted-foreground">{SITE.requirements}. Version {SITE.version}.</p>
+    <section id="install" className="scroll-mt-16 border-t border-steel">
+      <div className="mx-auto flex max-w-7xl flex-col gap-12 px-4 py-20 sm:px-8 lg:py-28">
+        <div className="flex max-w-2xl flex-col gap-4">
+          <h2 className="display-section text-ink">Up and running in a minute</h2>
+          <p className="text-lg text-slate">
+            {SITE.requirements}. Version {SITE.version}.
+          </p>
         </div>
         <ol className="grid gap-4 md:grid-cols-3">
           {steps.map((s, i) => (
-            <li key={s.title} className="flex flex-col gap-2 rounded-2xl border border-border p-6">
-              <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">{i + 1}</span>
-              <h3 className="font-medium">{s.title}</h3>
-              <p className="text-sm text-muted-foreground">{s.text}</p>
+            <li key={s.title} className="flex flex-col gap-3 rounded-2xl border border-steel p-6">
+              <span className="technical-label flex size-7 items-center justify-center rounded-[8px] bg-ink text-white">{i + 1}</span>
+              <h3 className="font-medium text-ink">{s.title}</h3>
+              <p className="text-sm leading-relaxed text-slate">{s.text}</p>
             </li>
           ))}
         </ol>
         <FirstLaunch />
-        <div className="flex justify-center">
-          <Button render={<a href={SITE.downloadUrl} />} nativeButton={false} className="h-11 rounded-full px-6">
+        <div>
+          <a
+            href={SITE.downloadUrl}
+            className="inline-flex items-center rounded-2xl bg-aqua px-[22px] py-3 text-sm font-medium text-ink transition-[filter] hover:brightness-95"
+          >
             Download OptimosApp {SITE.version}
-          </Button>
+          </a>
         </div>
       </div>
     </section>

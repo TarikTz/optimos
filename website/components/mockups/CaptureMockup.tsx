@@ -19,11 +19,7 @@ export function CaptureMockup({ annotated = false }: { annotated?: boolean }) {
             <svg className="absolute inset-0 size-full" viewBox="0 0 100 100" fill="none">
               <path d="M88 20 L62 42 M62 42 L62 31 M62 42 L73 42" stroke="#ef4444" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <div className="absolute bottom-[14%] left-[8%] grid h-[16%] w-[46%] grid-cols-8 overflow-hidden rounded-[2px]">
-              {Array.from({ length: 32 }).map((_, i) => (
-                <span key={i} className={i % 3 === 0 ? "bg-slate-400" : i % 3 === 1 ? "bg-slate-300" : "bg-slate-500"} />
-              ))}
-            </div>
+            <div className="mosaic absolute bottom-[14%] left-[8%] h-[16%] w-[46%] rounded-[2px]" />
             <span className="absolute right-[8%] bottom-[16%] text-[11px] font-semibold text-red-500 drop-shadow">Check this</span>
           </>
         )}

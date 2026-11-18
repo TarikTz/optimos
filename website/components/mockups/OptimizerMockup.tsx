@@ -14,7 +14,7 @@ export function OptimizerMockup() {
     <div
       role="img"
       aria-label="Mockup of the Optimize Images window listing files with their before and after sizes"
-      className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10"
+      className="w-full overflow-hidden rounded-2xl border border-steel bg-card shadow-sheet"
     >
       <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-3 py-2.5">
         <span className="size-2.5 rounded-full bg-red-400" />

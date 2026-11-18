@@ -5,6 +5,8 @@ export const SITE = {
   description:
     "Free, open-source Mac app to capture screenshots, annotate and hide details, then optimize and convert images to WebP, JPEG or PNG. Private: it all runs on your Mac.",
   author: "Tarik Omercehajic",
+  // Public contact address, shown on the support and privacy pages.
+  contactEmail: "tarik.omercehajic@gmail.com",
   version: "0.2.1",
   // GitHub's "latest release" always serves the newest DMG under this fixed name (see the release
   // steps in the README), so a new release needs no link change, only the version below.

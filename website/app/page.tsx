@@ -1,19 +1,15 @@
-import Header from "@/components/shadcn-space/blocks/hero-01/header";
-import HeroSection from "@/components/shadcn-space/blocks/hero-01/hero";
-import Features from "@/components/sections/Features";
-import Editors from "@/components/sections/Editors";
+import Announcement from "@/components/sections/Announcement";
+import Header from "@/components/sections/Header";
+import Hero from "@/components/sections/Hero";
+import Features, { FEATURES } from "@/components/sections/Features";
+import Redaction from "@/components/sections/Redaction";
+import Audience from "@/components/sections/Audience";
 import Install from "@/components/sections/Install";
-import Faq, { FAQ_DATA } from "@/components/shadcn-space/blocks/faq-01/faq";
-import CTA from "@/components/shadcn-space/blocks/cta-01/cta";
+import Faq from "@/components/sections/Faq";
+import Cta from "@/components/sections/Cta";
 import Footer from "@/components/sections/Footer";
+import { FAQ_DATA } from "@/lib/faq";
 import { SITE } from "@/lib/site";
-
-const navigation = [
-  { title: "Features", href: "#features" },
-  { title: "For editors", href: "#editors" },
-  { title: "Install", href: "#install" },
-  { title: "FAQ", href: "#faq" },
-];
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -48,14 +44,17 @@ export default function Home() {
   return (
     <div className="relative">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <Header navigationData={navigation} />
+      <Announcement />
+      <Header />
       <main>
-        <HeroSection />
-        <Features />
-        <Editors />
+        <Hero />
+        <Features id="features" items={FEATURES.slice(0, 2)} />
+        <Redaction />
+        <Features items={FEATURES.slice(2)} />
+        <Audience />
         <Install />
         <Faq />
-        <CTA />
+        <Cta />
       </main>
       <Footer />
     </div>
